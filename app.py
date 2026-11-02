@@ -291,6 +291,151 @@ KNN_PARAM_SPECS: Dict[str, Dict[str, object]] = {
     "euploid_rate": {"min": 0.0, "max": 1.0, "default": 0.45, "step": 0.05, "fmt": "%.2f", "unit": " (0–1)"},
 }
 
+# Exact (case-insensitive) translations for IVF Reasons (Italian study values + common EN/ZH terms)
+IVF_REASON_EXACT_MAP: Dict[str, Tuple[str, str]] = {
+    # Italian values from Frontiers 2025 Study Dataset (pma_indicazione_des) -> (Chinese, English)
+    "disovulatoria": ("排卵障碍", "Ovulatory Disorder"),
+    "endometriosi": ("子宫内膜异位症", "Endometriosis"),
+    "fattore femminile": ("女方因素", "Female Factor"),
+    "fattore maschile": ("男方因素", "Male Factor"),
+    "fattore maschile grave": ("严重男方因素", "Severe Male Factor"),
+    "fattore maschile lieve": ("轻度男方因素", "Mild Male Factor"),
+    "fattore misto maschile e femminile": ("男女双方混合因素", "Combined Male & Female Factor"),
+    "fattore multiplo femminile": ("多发女方因素", "Multiple Female Factors"),
+    "fattore tubarico parziale": ("部分输卵管因素", "Partial Tubal Factor"),
+    "fattore tubarico/aderenziale": ("输卵管/盆腔粘连", "Tubal / Pelvic Adhesions"),
+    "genetico": ("遗传因素", "Genetic Factor"),
+    "idiopatica": ("不明原因", "Unexplained (Idiopathic)"),
+    "poliabortività": ("复发性流产", "Recurrent Pregnancy Loss"),
+    "ridotta riserva ovarica": ("卵巢储备功能减退 (DOR)", "Diminished Ovarian Reserve (DOR)"),
+    # Common English terms -> (Chinese, English)
+    "dor": ("卵巢储备功能减退 (DOR)", "DOR"),
+    "diminished ovarian reserve": ("卵巢储备功能减退 (DOR)", "Diminished Ovarian Reserve"),
+    "male factor": ("男方因素", "Male Factor"),
+    "mfi": ("男方因素 (MFI)", "Male Factor (MFI)"),
+    "female factor": ("女方因素", "Female Factor"),
+    "tubal": ("输卵管因素", "Tubal Factor"),
+    "tubal factor": ("输卵管因素", "Tubal Factor"),
+    "pcos": ("多囊卵巢综合征 (PCOS)", "PCOS"),
+    "endometriosis": ("子宫内膜异位症", "Endometriosis"),
+    "unexplained": ("不明原因", "Unexplained"),
+    "age": ("高龄因素", "Age Factor"),
+    "ama": ("高龄因素 (AMA)", "Advanced Maternal Age"),
+    "advanced maternal age": ("高龄因素", "Advanced Maternal Age"),
+    "rpl": ("复发性流产 (RPL)", "Recurrent Pregnancy Loss"),
+    "recurrent pregnancy loss": ("复发性流产", "Recurrent Pregnancy Loss"),
+    "genetic": ("遗传/基因因素", "Genetic Factor"),
+    "pgt-m": ("单基因遗传病 (PGT-M)", "PGT-M (Monogenic)"),
+    "pgt-sr": ("染色体结构异常 (PGT-SR)", "PGT-SR (Structural Rearrangement)"),
+    "egg freezing": ("冻卵/生育力保存", "Egg Freezing"),
+    "fertility preservation": ("生育力保存", "Fertility Preservation"),
+}
+
+# Substring/phrase mapping for free-text Chinese <-> English community reasons
+ZH_TO_EN_REASON_TERMS: List[Tuple[str, str]] = [
+    ("卵巢储备功能减退", "DOR"),
+    ("卵巢功能减退", "DOR"),
+    ("卵巢早衰", "POI/DOR"),
+    ("早衰", "DOR"),
+    ("多囊卵巢", "PCOS"),
+    ("多囊", "PCOS"),
+    ("子宫内膜异位症", "Endometriosis"),
+    ("子宫内膜异位", "Endometriosis"),
+    ("内异症", "Endometriosis"),
+    ("巧囊", "Endometrioma"),
+    ("腺肌症", "Adenomyosis"),
+    ("双侧输卵管切除", "Bilateral Salpingectomy"),
+    ("输卵管堵塞", "Tubal Blockage"),
+    ("输卵管积水", "Hydrosalpinx"),
+    ("输卵管粘连", "Tubal Adhesions"),
+    ("输卵管", "Tubal Factor"),
+    ("宫外孕", "Ectopic History"),
+    ("排卵障碍", "Ovulatory Disorder"),
+    ("少弱畸精", "OAT (Male Factor)"),
+    ("少弱精", "Oligoasthenozoospermia"),
+    ("弱精", "Asthenozoospermia (Male)"),
+    ("少精", "Oligozoospermia (Male)"),
+    ("畸精", "Teratozoospermia (Male)"),
+    ("无精", "Azoospermia (Male)"),
+    ("精子碎片率高", "High Sperm DFI"),
+    ("碎片率高", "High DFI"),
+    ("精索静脉曲张", "Varicocele"),
+    ("男方因素", "Male Factor"),
+    ("男方", "Male Factor"),
+    ("女方因素", "Female Factor"),
+    ("复发性流产", "Recurrent Pregnancy Loss"),
+    ("习惯性流产", "Recurrent Miscarriage"),
+    ("胎停", "Missed Miscarriage"),
+    ("生化", "Biochemical Pregnancy"),
+    ("流产", "Miscarriage"),
+    ("平衡易位", "Balanced Translocation"),
+    ("罗氏易位", "Robertsonian Translocation"),
+    ("染色体异常", "Chromosomal Abnormality"),
+    ("染色体", "Chromosomal"),
+    ("单基因病", "Monogenic (PGT-M)"),
+    ("单基因", "Monogenic (PGT-M)"),
+    ("遗传", "Genetic"),
+    ("基因", "Genetic"),
+    ("不明原因不孕", "Unexplained Infertility"),
+    ("不明原因", "Unexplained"),
+    ("高龄", "Age Factor"),
+    ("冻卵", "Egg Freezing"),
+    ("选性别", "Family Balancing"),
+    ("二胎", "Second Child"),
+    ("三代", "PGT"),
+]
+
+PROTOCOL_EXACT_MAP: Dict[str, Tuple[str, str]] = {
+    "antagonista fisso": ("固定拮抗剂方案", "Fixed Antagonist"),
+    "antagonista variabile": ("灵活拮抗剂方案", "Flexible Antagonist"),
+    "flare": ("微刺激/短效激发 (Flare)", "Flare-up"),
+    "long": ("长方案", "Long Agonist"),
+    "short": ("短方案", "Short Agonist"),
+    "spontaneo": ("自然周期", "Natural Cycle"),
+}
+
+
+def translate_ivf_reason(val: object, lang: str) -> str:
+    if val is None or pd.isna(val):
+        return ""
+    s = str(val).strip()
+    if not s or s.lower() == "nan":
+        return ""
+
+    key = s.lower()
+    if key in IVF_REASON_EXACT_MAP:
+        zh_val, en_val = IVF_REASON_EXACT_MAP[key]
+        return zh_val if lang == "zh" else en_val
+
+    if lang == "en" and re.search(r"[\u4e00-\u9fff]", s):
+        out = s
+        for zh_term, en_term in ZH_TO_EN_REASON_TERMS:
+            if zh_term in out:
+                out = out.replace(zh_term, f" {en_term} ")
+        out = (
+            out.replace("，", ", ")
+            .replace("、", ", ")
+            .replace("；", "; ")
+            .replace("＋", " + ")
+        )
+        out = re.sub(r"\s+", " ", out).strip(" ,;")
+        return out
+
+    return s
+
+
+def translate_protocol(val: object, lang: str) -> str:
+    if val is None or pd.isna(val):
+        return ""
+    s = str(val).strip()
+    if not s or s.lower() == "nan":
+        return ""
+    key = s.lower()
+    if key in PROTOCOL_EXACT_MAP:
+        zh_val, en_val = PROTOCOL_EXACT_MAP[key]
+        return zh_val if lang == "zh" else en_val
+    return s
+
 
 # ---------------------------------------------------------------------------
 # Helper Functions for Parsing & Cleaning
@@ -1054,7 +1199,9 @@ def main() -> None:
                     f"{p_labels['blastocyst_rate']} %": (neighbors_df["blastocyst_rate"] * 100.0).round(1),
                     f"{p_labels['euploid_rate']} %": (neighbors_df["euploid_rate"] * 100.0).round(1),
                     p_labels["gonadotropin_total_iu"]: neighbors_df["gonadotropin_total_iu"],
-                    ("原因" if lang_choice == "zh" else "Reason"): neighbors_df["ivf_reason"],
+                    ("原因" if lang_choice == "zh" else "Reason"): neighbors_df["ivf_reason"].map(
+                        lambda v: translate_ivf_reason(v, lang_choice)
+                    ),
                     ("备注" if lang_choice == "zh" else "Note"): neighbors_df["note"],
                 }
             )
@@ -1663,6 +1810,12 @@ def main() -> None:
             st.markdown(t["raw_header"])
             display_raw = all_df[all_df["dataset_key"].isin(selected_ds_keys)].copy()
             display_raw["dataset"] = display_raw["dataset_key"].map(ds_names)
+            display_raw["ivf_reason"] = display_raw["ivf_reason"].map(
+                lambda v: translate_ivf_reason(v, lang_choice)
+            )
+            display_raw["protocol"] = display_raw["protocol"].map(
+                lambda v: translate_protocol(v, lang_choice)
+            )
             display_raw = display_raw.drop(columns=["dataset_key"])
             raw_col_map = {
                 **p_labels,
