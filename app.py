@@ -10,6 +10,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from scipy import stats
 import streamlit as st
+import streamlit.components.v1 as components
 
 # ---------------------------------------------------------------------------
 # Page Configuration & Constants
@@ -21,22 +22,88 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Hide Streamlit toolbar, deploy button, footer, and viewer/creator profile badges inside the app frame
+# Hide Streamlit toolbar actions, deploy button, footer, and viewer/creator profile badges
+# across both the inner app iframe and the outer Streamlit Community Cloud shell.
+_HIDE_STREAMLIT_BADGE_CSS = """
+#MainMenu {visibility: hidden !important; display: none !important;}
+footer {visibility: hidden !important; display: none !important;}
+.stAppDeployButton {display: none !important;}
+[data-testid="stToolbarActions"] {display: none !important;}
+[data-testid="stDecoration"] {display: none !important;}
+[data-testid="stStatusWidget"] {visibility: hidden !important; display: none !important;}
+[data-testid="manage-app-button"] {display: none !important;}
+[class*="viewerBadge"] {display: none !important; visibility: hidden !important; height: 0 !important; width: 0 !important; opacity: 0 !important; pointer-events: none !important;}
+[class*="profileContainer"] {display: none !important; visibility: hidden !important; height: 0 !important; width: 0 !important; opacity: 0 !important; pointer-events: none !important;}
+[class*="profilePreview"] {display: none !important; visibility: hidden !important; height: 0 !important; width: 0 !important; opacity: 0 !important; pointer-events: none !important;}
+a[href*="share.streamlit.io/user"] {display: none !important; visibility: hidden !important;}
+a[href*="streamlit.io/cloud"] {display: none !important; visibility: hidden !important;}
+img[src*="avatars.githubusercontent.com"] {display: none !important; visibility: hidden !important;}
+"""
+
 st.markdown(
-    """
+    f"""
     <style>
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    .stAppDeployButton {display: none !important;}
-    [data-testid="stToolbar"] {visibility: hidden !important; height: 0 !important;}
-    [data-testid="stDecoration"] {display: none !important;}
-    [data-testid="stStatusWidget"] {visibility: hidden !important;}
-    [class^="viewerBadge"] {display: none !important;}
-    [class*="_profileContainer"] {display: none !important;}
-    [class*="_profilePreview"] {display: none !important;}
+    {_HIDE_STREAMLIT_BADGE_CSS}
+    iframe[height="0"] {{display: none !important; height: 0 !important; margin: 0 !important; padding: 0 !important; border: none !important;}}
     </style>
     """,
     unsafe_allow_html=True,
+)
+
+components.html(
+    f"""
+    <script>
+    (function() {{
+        const css = `{_HIDE_STREAMLIT_BADGE_CSS}`;
+        const selectors = [
+            '[class*="viewerBadge"]',
+            '[class*="profileContainer"]',
+            '[class*="profilePreview"]',
+            '[data-testid="manage-app-button"]',
+            'a[href*="share.streamlit.io/user"]',
+            'a[href*="streamlit.io/cloud"]',
+            'img[src*="avatars.githubusercontent.com"]'
+        ].join(',');
+
+        function hideBadgesInDoc(doc) {{
+            if (!doc) return;
+            try {{
+                if (doc.head && !doc.getElementById('hide-st-cloud-badges')) {{
+                    const style = doc.createElement('style');
+                    style.id = 'hide-st-cloud-badges';
+                    style.textContent = css;
+                    doc.head.appendChild(style);
+                }}
+                doc.querySelectorAll(selectors).forEach(function(el) {{
+                    el.style.setProperty('display', 'none', 'important');
+                    el.style.setProperty('visibility', 'hidden', 'important');
+                    el.style.setProperty('opacity', '0', 'important');
+                    el.style.setProperty('pointer-events', 'none', 'important');
+                }});
+            }} catch (e) {{}}
+        }}
+
+        const targetWindows = [window];
+        try {{ if (window.parent && window.parent !== window) targetWindows.push(window.parent); }} catch (e) {{}}
+        try {{ if (window.top && window.top !== window && window.top !== window.parent) targetWindows.push(window.top); }} catch (e) {{}}
+
+        targetWindows.forEach(function(w) {{
+            try {{
+                const doc = w.document;
+                hideBadgesInDoc(doc);
+                if (w.MutationObserver && doc.body && !doc.body.dataset.stBadgeObserverAttached) {{
+                    doc.body.dataset.stBadgeObserverAttached = 'true';
+                    const observer = new w.MutationObserver(function() {{
+                        hideBadgesInDoc(doc);
+                    }});
+                    observer.observe(doc.body, {{ childList: true, subtree: true }});
+                }}
+            }} catch (e) {{}}
+        }});
+    }})();
+    </script>
+    """,
+    height=0,
 )
 
 STUDY_KEY = "study"
