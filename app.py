@@ -308,28 +308,79 @@ IVF_REASON_EXACT_MAP: Dict[str, Tuple[str, str]] = {
     "idiopatica": ("不明原因", "Unexplained (Idiopathic)"),
     "poliabortività": ("复发性流产", "Recurrent Pregnancy Loss"),
     "ridotta riserva ovarica": ("卵巢储备功能减退 (DOR)", "Diminished Ovarian Reserve (DOR)"),
-    # Common English terms -> (Chinese, English)
+    # Common English & Community Google Sheet terms -> (Chinese, English)
     "dor": ("卵巢储备功能减退 (DOR)", "DOR"),
     "diminished ovarian reserve": ("卵巢储备功能减退 (DOR)", "Diminished Ovarian Reserve"),
+    "male": ("男方因素", "Male Factor"),
     "male factor": ("男方因素", "Male Factor"),
+    "male oaz": ("男方少弱精 (OAZ)", "Male Oligoasthenozoospermia (OAZ)"),
+    "male oat": ("男方少弱畸精 (OAT)", "Male OAT"),
+    "male dfi 55%": ("男方精子碎片率高 (DFI 55%)", "Male High Sperm DFI (55%)"),
     "mfi": ("男方因素 (MFI)", "Male Factor (MFI)"),
+    "female": ("女方因素", "Female Factor"),
     "female factor": ("女方因素", "Female Factor"),
     "tubal": ("输卵管因素", "Tubal Factor"),
     "tubal factor": ("输卵管因素", "Tubal Factor"),
     "pcos": ("多囊卵巢综合征 (PCOS)", "PCOS"),
     "endometriosis": ("子宫内膜异位症", "Endometriosis"),
     "unexplained": ("不明原因", "Unexplained"),
+    "unknown": ("不明原因", "Unexplained / Unknown"),
     "age": ("高龄因素", "Age Factor"),
-    "ama": ("高龄因素 (AMA)", "Advanced Maternal Age"),
-    "advanced maternal age": ("高龄因素", "Advanced Maternal Age"),
+    "ama": ("女方高龄 (AMA)", "Advanced Maternal Age"),
+    "advanced maternal age": ("女方高龄", "Advanced Maternal Age"),
+    "advanced paternal age": ("男方高龄", "Advanced Paternal Age"),
+    "advanced paternal age (50+)": ("男方高龄 (50+)", "Advanced Paternal Age (50+)"),
     "rpl": ("复发性流产 (RPL)", "Recurrent Pregnancy Loss"),
     "recurrent pregnancy loss": ("复发性流产", "Recurrent Pregnancy Loss"),
+    "miscarriage": ("流产史/胎停", "Miscarriage History"),
     "genetic": ("遗传/基因因素", "Genetic Factor"),
+    "karyotype": ("染色体核型异常", "Karyotype / Chromosomal"),
     "pgt-m": ("单基因遗传病 (PGT-M)", "PGT-M (Monogenic)"),
     "pgt-sr": ("染色体结构异常 (PGT-SR)", "PGT-SR (Structural Rearrangement)"),
     "egg freezing": ("冻卵/生育力保存", "Egg Freezing"),
+    "frozen egg": ("冻卵/解冻卵子", "Frozen Egg"),
+    "egg banking": ("攒卵/储卵", "Egg Banking"),
+    "embryo banking": ("攒胚胎/储胚", "Embryo Banking"),
     "fertility preservation": ("生育力保存", "Fertility Preservation"),
+    "gender selection": ("性别选择", "Gender Selection"),
+    "family balancing": ("家庭性别平衡", "Family Balancing"),
 }
+
+# Substring/phrase mapping for free-text English -> Chinese community reasons
+EN_TO_ZH_REASON_TERMS: List[Tuple[str, str]] = [
+    ("advanced paternal age", "男方高龄"),
+    ("advanced maternal age", "女方高龄"),
+    ("diminished ovarian reserve", "卵巢储备功能减退"),
+    ("recurrent pregnancy loss", "复发性流产"),
+    ("fertility preservation", "生育力保存"),
+    ("gender selection", "性别选择"),
+    ("family balancing", "家庭性别平衡"),
+    ("embryo banking", "攒胚胎"),
+    ("egg banking", "攒卵/储卵"),
+    ("egg freezing", "冻卵"),
+    ("frozen egg", "冻卵"),
+    ("male factor", "男方因素"),
+    ("female factor", "女方因素"),
+    ("tubal factor", "输卵管因素"),
+    ("endometriosis", "子宫内膜异位症"),
+    ("miscarriage", "流产史/胎停"),
+    ("unexplained", "不明原因"),
+    ("unknown", "不明原因"),
+    ("karyotype", "染色体核型异常"),
+    ("genetic", "遗传因素"),
+    ("paternal age", "男方年龄"),
+    ("maternal age", "女方年龄"),
+    ("tubal", "输卵管因素"),
+    ("pcos", "多囊 (PCOS)"),
+    ("dor", "卵巢储备减退 (DOR)"),
+    ("oaz", "少弱精 (OAZ)"),
+    ("oat", "少弱畸精 (OAT)"),
+    ("mfi", "男方因素 (MFI)"),
+    ("rpl", "复发性流产 (RPL)"),
+    ("dfi", "精子碎片率 (DFI)"),
+    ("male", "男方"),
+    ("female", "女方"),
+]
 
 # Substring/phrase mapping for free-text Chinese <-> English community reasons
 ZH_TO_EN_REASON_TERMS: List[Tuple[str, str]] = [
@@ -402,10 +453,18 @@ def translate_ivf_reason(val: object, lang: str) -> str:
     if not s or s.lower() == "nan":
         return ""
 
-    key = s.lower()
+    key = re.sub(r"\s+", " ", s.lower())
     if key in IVF_REASON_EXACT_MAP:
         zh_val, en_val = IVF_REASON_EXACT_MAP[key]
         return zh_val if lang == "zh" else en_val
+
+    if lang == "zh" and re.search(r"[A-Za-z]", s):
+        out = s
+        for en_term, zh_term in EN_TO_ZH_REASON_TERMS:
+            pattern = re.compile(r"\b" + re.escape(en_term) + r"\b", flags=re.IGNORECASE)
+            out = pattern.sub(zh_term, out)
+        out = re.sub(r"\s+", " ", out).strip()
+        return out
 
     if lang == "en" and re.search(r"[\u4e00-\u9fff]", s):
         out = s
@@ -1122,32 +1181,12 @@ def main() -> None:
                         )
                     )
 
-        with st.expander(t["adv_filter_exp"], expanded=False):
-            fc1, fc2, fc3 = st.columns(3)
-            with fc1:
-                require_complete_funnel = st.checkbox(t["req_complete"], value=True)
-            with fc2:
-                min_eggs_filter = st.number_input(t["min_eggs"], min_value=0, max_value=50, value=0, step=1)
-            with fc3:
-                use_custom_eggs = st.checkbox(t["anchor_eggs"], value=False)
-                custom_eggs_val = (
-                    st.number_input(t["my_eggs"], min_value=1, max_value=60, value=10, step=1)
-                    if use_custom_eggs
-                    else None
-                )
-
         if knn_pool_choice == STUDY_KEY:
             candidate_pool = study_df.copy()
         elif knn_pool_choice == COMMUNITY_KEY:
             candidate_pool = comm_df.copy()
         else:
             candidate_pool = pd.concat([study_df, comm_df], ignore_index=True)
-
-        if not candidate_pool.empty:
-            if require_complete_funnel:
-                candidate_pool = candidate_pool.dropna(subset=FUNNEL_STAGE_COLS)
-            if min_eggs_filter > 0:
-                candidate_pool = candidate_pool[candidate_pool["eggs_retrieved"] >= min_eggs_filter]
 
         if not selected_knn_params:
             st.warning(t["select_at_least_one_param"])
@@ -1229,9 +1268,7 @@ def main() -> None:
             if active_neighbors.empty:
                 st.error(t["all_unchecked"])
             else:
-                funnel_summary = summarize_funnel(
-                    active_neighbors, lang=lang_choice, starting_eggs_override=custom_eggs_val
-                )
+                funnel_summary = summarize_funnel(active_neighbors, lang=lang_choice)
 
                 st.markdown(t["step2_funnel"])
                 kpi_cols = st.columns(len(FUNNEL_STAGE_COLS))
