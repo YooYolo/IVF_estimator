@@ -2,8 +2,9 @@ import os
 import re
 import zipfile
 import xml.etree.ElementTree as ET
+from contextlib import contextmanager
 from itertools import combinations
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Iterator, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -40,10 +41,53 @@ a[href*="streamlit.io/cloud"] {display: none !important; visibility: hidden !imp
 img[src*="avatars.githubusercontent.com"] {display: none !important; visibility: hidden !important;}
 """
 
+_SHADED_OPTION_BOX_CSS = """
+/* Outer shaded option card wrapping both the question header bar and the selection area below */
+div[data-testid="stVerticalBlockBorderWrapper"]:has(.st-opt-box-marker):not(:has(div[data-testid="stVerticalBlockBorderWrapper"] .st-opt-box-marker)),
+div[data-testid="stVerticalBlock"]:has(.st-opt-box-marker):not(:has(div[data-testid="stVerticalBlock"] .st-opt-box-marker)) {
+    background-color: #f1f5f9 !important;
+    border: 1.5px solid #cbd5e1 !important;
+    border-radius: 10px !important;
+    padding: 10px 12px 12px 12px !important;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06) !important;
+    margin-bottom: 6px !important;
+}
+
+/* Prevent double border when both stVerticalBlockBorderWrapper and inner stVerticalBlock match */
+div[data-testid="stVerticalBlockBorderWrapper"]:has(.st-opt-box-marker) > div > div[data-testid="stVerticalBlock"]:has(.st-opt-box-marker) {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin-bottom: 0 !important;
+    background-color: transparent !important;
+}
+
+/* Shaded selection area directly below the question header for widgets inside option cards */
+div[data-testid="stVerticalBlock"]:has(.st-opt-box-marker):not(:has(div[data-testid="stVerticalBlock"] .st-opt-box-marker)) [data-testid="stRadio"],
+div[data-testid="stVerticalBlock"]:has(.st-opt-box-marker):not(:has(div[data-testid="stVerticalBlock"] .st-opt-box-marker)) [data-testid="stCheckbox"],
+div[data-testid="stVerticalBlock"]:has(.st-opt-box-marker):not(:has(div[data-testid="stVerticalBlock"] .st-opt-box-marker)) [data-testid="stSlider"],
+div[data-testid="stVerticalBlock"]:has(.st-opt-box-marker):not(:has(div[data-testid="stVerticalBlock"] .st-opt-box-marker)) [data-testid="stMultiSelect"],
+div[data-testid="stVerticalBlock"]:has(.st-opt-box-marker):not(:has(div[data-testid="stVerticalBlock"] .st-opt-box-marker)) [data-testid="stSelectbox"],
+div[data-testid="stVerticalBlock"]:has(.st-opt-box-marker):not(:has(div[data-testid="stVerticalBlock"] .st-opt-box-marker)) [data-testid="stNumberInput"] {
+    background-color: #e2e8f0 !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 7px !important;
+    padding: 6px 10px !important;
+}
+
+.st-opt-box-marker {
+    display: none !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+"""
+
 st.markdown(
     f"""
     <style>
     {_HIDE_STREAMLIT_BADGE_CSS}
+    {_SHADED_OPTION_BOX_CSS}
     iframe[height="0"] {{display: none !important; height: 0 !important; margin: 0 !important; padding: 0 !important; border: none !important;}}
     </style>
     """,
@@ -54,7 +98,7 @@ components.html(
     f"""
     <script>
     (function() {{
-        const css = `{_HIDE_STREAMLIT_BADGE_CSS}`;
+        const css = `{_HIDE_STREAMLIT_BADGE_CSS}\n{_SHADED_OPTION_BOX_CSS}`;
         const selectors = [
             '[class*="viewerBadge"]',
             '[class*="profileContainer"]',
@@ -65,7 +109,16 @@ components.html(
             'img[src*="avatars.githubusercontent.com"]'
         ].join(',');
 
-        function hideBadgesInDoc(doc) {{
+        const widgetSelectors = [
+            '[data-testid="stRadio"]',
+            '[data-testid="stCheckbox"]',
+            '[data-testid="stSlider"]',
+            '[data-testid="stMultiSelect"]',
+            '[data-testid="stSelectbox"]',
+            '[data-testid="stNumberInput"]'
+        ].join(',');
+
+        function applyStylesInDoc(doc) {{
             if (!doc) return;
             try {{
                 if (doc.head && !doc.getElementById('hide-st-cloud-badges')) {{
@@ -80,6 +133,30 @@ components.html(
                     el.style.setProperty('opacity', '0', 'important');
                     el.style.setProperty('pointer-events', 'none', 'important');
                 }});
+                doc.querySelectorAll('.st-opt-box-marker').forEach(function(marker) {{
+                    const vBlock = marker.closest('[data-testid="stVerticalBlock"]');
+                    const borderWrap = vBlock ? vBlock.closest('[data-testid="stVerticalBlockBorderWrapper"]') : null;
+                    const cardEl = borderWrap || vBlock;
+                    if (cardEl && !cardEl.dataset.stOptCardStyled) {{
+                        cardEl.dataset.stOptCardStyled = 'true';
+                        cardEl.style.setProperty('background-color', '#f1f5f9', 'important');
+                        cardEl.style.setProperty('border', '1.5px solid #cbd5e1', 'important');
+                        cardEl.style.setProperty('border-radius', '10px', 'important');
+                        cardEl.style.setProperty('padding', '10px 12px 12px 12px', 'important');
+                        cardEl.style.setProperty('box-shadow', '0 1px 3px rgba(15, 23, 42, 0.06)', 'important');
+                    }}
+                    if (vBlock) {{
+                        vBlock.querySelectorAll(widgetSelectors).forEach(function(wEl) {{
+                            if (!wEl.dataset.stOptWidgetStyled) {{
+                                wEl.dataset.stOptWidgetStyled = 'true';
+                                wEl.style.setProperty('background-color', '#e2e8f0', 'important');
+                                wEl.style.setProperty('border', '1px solid #cbd5e1', 'important');
+                                wEl.style.setProperty('border-radius', '7px', 'important');
+                                wEl.style.setProperty('padding', '6px 10px', 'important');
+                            }}
+                        }});
+                    }}
+                }});
             }} catch (e) {{}}
         }}
 
@@ -90,11 +167,11 @@ components.html(
         targetWindows.forEach(function(w) {{
             try {{
                 const doc = w.document;
-                hideBadgesInDoc(doc);
+                applyStylesInDoc(doc);
                 if (w.MutationObserver && doc.body && !doc.body.dataset.stBadgeObserverAttached) {{
                     doc.body.dataset.stBadgeObserverAttached = 'true';
                     const observer = new w.MutationObserver(function() {{
-                        hideBadgesInDoc(doc);
+                        applyStylesInDoc(doc);
                     }});
                     observer.observe(doc.body, {{ childList: true, subtree: true }});
                 }}
@@ -105,6 +182,25 @@ components.html(
     """,
     height=0,
 )
+
+
+@contextmanager
+def shaded_option_box(question_label: str) -> Iterator[None]:
+    """Render a bordered, shaded card box with a highlighted question header and shaded selection area below."""
+    try:
+        box = st.container(border=True)
+    except TypeError:
+        box = st.container()
+    with box:
+        st.markdown(
+            f"<div class='st-opt-box-marker'></div>"
+            f"<div style='background-color:#dbeafe;border-left:4px solid #2563eb;"
+            f"border-radius:6px;padding:6px 10px;margin-bottom:6px;"
+            f"font-size:0.84rem;font-weight:700;color:#1e3a8a;line-height:1.35;'>"
+            f"{question_label}</div>",
+            unsafe_allow_html=True,
+        )
+        yield
 
 STUDY_KEY = "study"
 COMMUNITY_KEY = "community"
@@ -246,12 +342,14 @@ UI_TEXT: Dict[str, Dict[str, str]] = {
         "legend_text": "**图例:** ⚫ 临床研究 (小黑点 α=0.3) | 🟠 群友数据 (橙点)",
         "tab_knn": "🎯 1. 漏斗预测 (k-NN)",
         "tab_corr": "📈 2. 相关性分析",
-        "tab_data": "🗂️ 3. 汇总统计与原始数据",
+        "tab_ctrl_corr": "🔬 3. 限定条件相关性",
+        "tab_data": "🗂️ 4. 汇总统计与原始数据",
         "bubble_header": "🫧 相关性气泡热图 (Correlation Bubble Heatmap)",
         "bubble_desc": "**颜色:** 正相关为红、负相关为蓝、无相关为白 &nbsp;|&nbsp; **气泡大小 & `*` 标记:** 代表统计显著性 (BH 校正 $q$ 值) &nbsp;|&nbsp; **💡 在热图中点击选择 2 个气泡**（依次点击两个气泡，或按住 Shift 连选两个气泡），即可在下方左右双图中同时展示两个气泡的相关性分析与散点图。",
         "bubble_params": "气泡热图参数 (可自由添加或移除)",
         "bubble_ds": "气泡热图数据集 (默认: 临床研究)",
         "bubble_click_target": "点击气泡更新模式",
+        "bubble_display_opt": "气泡数值显示选项",
         "click_mode_both": "双图依次更新 (选2个气泡)",
         "plot_1_label": "左图 (图 1)",
         "plot_2_label": "右图 (图 2)",
@@ -262,6 +360,7 @@ UI_TEXT: Dict[str, Dict[str, str]] = {
         "x_param": "X 轴参数",
         "y_param": "Y 轴参数",
         "stats_ds": "统计所用数据集 (默认: 临床研究)",
+        "trend_opt_label": "散点图趋势线选项",
         "compare_both": "并列对比两组",
         "same_param_info": "请选择两个不同的参数。",
         "insufficient_data": "有效配对样本不足。",
@@ -276,10 +375,30 @@ UI_TEXT: Dict[str, Dict[str, str]] = {
         "all_pairs_header": "📋 所有参数对相关性汇总表 (BH 校正)",
         "filter_param": "按参数 1 筛选",
         "filter_param2": "按参数 2 筛选",
+        "sig_filter_label": "显著性筛选",
         "all_params": "全部参数",
         "only_sig": "仅显示显著相关 (BH q < 0.05)",
         "col_p1": "参数 1",
         "col_p2": "参数 2",
+        "ctrl_header": "🔬 限定条件相关性分析 (Controlled Parameter Correlation Analysis)",
+        "ctrl_desc": "通过设定一个或多个控制参数的取值范围（例如：**AMH 在 1 ~ 3 之间**、**年龄在 30 ~ 35 岁之间**）筛选符合条件的周期样本，并在筛选后的子集中分析任意两个选定参数之间的相关性与散点分布。",
+        "ctrl_step1_title": "#### 1. 设定控制参数筛选范围 (Filter Samples by Control Parameters)",
+        "ctrl_select_params": "选择用于筛选样本的控制参数 (可自由添加或移除)",
+        "ctrl_min_label": "最小值 (Min)",
+        "ctrl_max_label": "最大值 (Max)",
+        "ctrl_data_range": "数据范围: {lo} ~ {hi}",
+        "ctrl_no_filter_info": "当前未设置任何筛选参数（使用全部有效样本）。可从上方添加控制参数限定范围。",
+        "ctrl_step2_title": "#### 2. 选择相关性分析目标参数与散点图设置",
+        "ctrl_x_param": "目标 X 轴参数",
+        "ctrl_y_param": "目标 Y 轴参数",
+        "ctrl_ds_select": "统计与散点图数据集",
+        "ctrl_display_opt": "图表显示选项",
+        "ctrl_show_bg": "显示未筛选背景样本 (浅灰点)",
+        "ctrl_bg_legend": "未筛选背景样本",
+        "ctrl_filter_summary": "🔍 **当前筛选条件:** {cond_str} &nbsp;|&nbsp; **筛选后周期数:** ⚫ 临床研究 **{n_study} / {tot_study}** &nbsp;·&nbsp; 🟠 群友数据 **{n_comm} / {tot_comm}**",
+        "ctrl_details_expander": "📋 查看当前筛选子集的所有参数对相关性表与样本明细",
+        "ctrl_filtered_pairs_title": "##### 当前筛选子集的所有参数对相关性汇总表 (BH 校正)",
+        "ctrl_filtered_records_title": "##### 符合筛选条件的样本记录明细",
         "knn_header": "🎯 最近邻 (k-NN) 促排漏斗预测",
         "knn_desc": "可自由选择匹配参数（默认 **年龄** 与 **AMH**，也可加入 **取卵数、成熟卵数、受精数、囊胚数** 等，默认 $k=10$）。可在下方表格取消勾选 **`Include`** 剔除特定邻居并实时重算。",
         "knn_match_params": "匹配参数 (可自由增删，如：受精数、囊胚数等)",
@@ -331,12 +450,14 @@ UI_TEXT: Dict[str, Dict[str, str]] = {
         "legend_text": "**Legend:** ⚫ Study (size=5, α=0.3) | 🟠 Community",
         "tab_knn": "🎯 1. Funnel Estimator (k-NN)",
         "tab_corr": "📈 2. Correlations",
-        "tab_data": "🗂️ 3. Summary & Data",
+        "tab_ctrl_corr": "🔬 3. Controlled Correlation",
+        "tab_data": "🗂️ 4. Summary & Data",
         "bubble_header": "🫧 Correlation Bubble Heatmap",
         "bubble_desc": "**Color (Heat):** Red = Positive, Blue = Negative, White = None &nbsp;|&nbsp; **Dot Size & `*`:** Statistical Significance (BH Adjusted $q$) &nbsp;|&nbsp; **💡 Select 2 bubbles** (click two bubbles sequentially, or Shift-click / box-select 2 bubbles) to display both correlation analyses side by side below.",
         "bubble_params": "Bubble Heatmap Parameters (Add or Remove)",
         "bubble_ds": "Heatmap Dataset (Default: Public Study)",
         "bubble_click_target": "Bubble Selection Mode",
+        "bubble_display_opt": "Bubble Value Display",
         "click_mode_both": "Both Plots (Select 2 Bubbles)",
         "plot_1_label": "Left Plot (Plot 1)",
         "plot_2_label": "Right Plot (Plot 2)",
@@ -347,6 +468,7 @@ UI_TEXT: Dict[str, Dict[str, str]] = {
         "x_param": "X Parameter",
         "y_param": "Y Parameter",
         "stats_ds": "Stats Dataset (Default: Study)",
+        "trend_opt_label": "Scatterplot Trendline Option",
         "compare_both": "Both Side-by-Side",
         "same_param_info": "Select two different parameters.",
         "insufficient_data": "Insufficient paired data.",
@@ -361,10 +483,30 @@ UI_TEXT: Dict[str, Dict[str, str]] = {
         "all_pairs_header": "📋 All-Pairs Correlation Table (BH Adjusted)",
         "filter_param": "Filter by Param 1",
         "filter_param2": "Filter by Param 2",
+        "sig_filter_label": "Significance Filter",
         "all_params": "All",
         "only_sig": "Only Significant (BH q < 0.05)",
         "col_p1": "Param 1",
         "col_p2": "Param 2",
+        "ctrl_header": "🔬 Controlled Parameter Correlation Analysis",
+        "ctrl_desc": "Filter cycles by specifying value ranges for one or more control parameters (e.g., **AMH between 1 and 3**, **Age between 30 and 35**), then analyze the correlation and scatterplot between any two chosen parameters within the filtered subset.",
+        "ctrl_step1_title": "#### 1. Set Control Parameter Filter Ranges",
+        "ctrl_select_params": "Select Control Parameters to Filter Samples (Add or Remove)",
+        "ctrl_min_label": "Min",
+        "ctrl_max_label": "Max",
+        "ctrl_data_range": "Data range: {lo} ~ {hi}",
+        "ctrl_no_filter_info": "No control parameters selected (using all valid samples). Add parameters above to filter by range.",
+        "ctrl_step2_title": "#### 2. Choose Target Correlation Parameters & Scatterplot Settings",
+        "ctrl_x_param": "Target X Parameter",
+        "ctrl_y_param": "Target Y Parameter",
+        "ctrl_ds_select": "Stats & Scatterplot Dataset",
+        "ctrl_display_opt": "Plot Display Options",
+        "ctrl_show_bg": "Show Unfiltered Background Samples (Light Gray)",
+        "ctrl_bg_legend": "Unfiltered Background",
+        "ctrl_filter_summary": "🔍 **Active Filters:** {cond_str} &nbsp;|&nbsp; **Filtered Cycles:** ⚫ Study **{n_study} / {tot_study}** &nbsp;·&nbsp; 🟠 Community **{n_comm} / {tot_comm}**",
+        "ctrl_details_expander": "📋 View All-Pairs Correlation Table & Filtered Records for This Subset",
+        "ctrl_filtered_pairs_title": "##### All-Pairs Correlation Summary in Filtered Subset (BH Adjusted)",
+        "ctrl_filtered_records_title": "##### Filtered Sample Records",
         "knn_header": "🎯 Nearest-Neighbor (k-NN) Attrition Funnel",
         "knn_desc": "Customize matching parameters (defaults to **Age** and **AMH**; can add **Eggs Retrieved, Matured, Fertilized, Blastocysts**, etc., default $k=10$). Uncheck **`Include`** in the table to remove specific neighbors and recalculate.",
         "knn_match_params": "Matching Parameters (add/remove e.g. Fertilized, Blastocysts, Eggs Retrieved)",
@@ -1399,13 +1541,15 @@ def main() -> None:
 
     # Sidebar Controls (Default Language: Chinese "zh")
     with st.sidebar:
-        lang_choice = st.radio(
-            "🌐 语言 / Language",
-            options=["zh", "en"],
-            format_func=lambda x: "中文" if x == "zh" else "English",
-            index=0,
-            horizontal=True,
-        )
+        with shaded_option_box("🌐 语言 / Language"):
+            lang_choice = st.radio(
+                "🌐 语言 / Language",
+                options=["zh", "en"],
+                format_func=lambda x: "中文" if x == "zh" else "English",
+                index=0,
+                horizontal=True,
+                label_visibility="collapsed",
+            )
         t = UI_TEXT[lang_choice]
         p_labels = PARAM_LABELS_I18N[lang_choice]
         ds_names = {
@@ -1415,16 +1559,18 @@ def main() -> None:
 
         st.header(t["sidebar_header"])
 
-        display_mode = st.radio(
-            t["display_mode"],
-            options=["both", STUDY_KEY, COMMUNITY_KEY],
-            format_func=lambda m: (
-                t["both_name"]
-                if m == "both"
-                else (t["study_name"] if m == STUDY_KEY else t["comm_name"])
-            ),
-            index=0,
-        )
+        with shaded_option_box(f"👁️ {t['display_mode']}"):
+            display_mode = st.radio(
+                t["display_mode"],
+                options=["both", STUDY_KEY, COMMUNITY_KEY],
+                format_func=lambda m: (
+                    t["both_name"]
+                    if m == "both"
+                    else (t["study_name"] if m == STUDY_KEY else t["comm_name"])
+                ),
+                index=0,
+                label_visibility="collapsed",
+            )
 
         st.markdown("---")
         st.subheader(t["status_header"])
@@ -1474,8 +1620,60 @@ def main() -> None:
     study_corr_df = compute_all_pairs_correlations(study_df)
     comm_corr_df = compute_all_pairs_correlations(comm_df)
 
+    def _render_stat_box(container, label_txt: str, val_txt: str, sig_str: Optional[str] = None) -> None:
+        """Render a shaded card box containing the stat description, value, and second-row significance stars."""
+        if sig_str is None:
+            sig_html = "&nbsp;"
+            sig_color = "transparent"
+        else:
+            sig_html = sig_str.replace("*", "&#42;") if sig_str else "—"
+            sig_color = "#dc2626" if sig_str.startswith("*") else "#64748b"
+
+        container.markdown(
+            f"<div style='background-color:#f1f5f9;border:1px solid #cbd5e1;border-radius:8px;"
+            f"padding:8px 6px;margin-bottom:8px;text-align:center;"
+            f"box-shadow:0 1px 2px rgba(15,23,42,0.05);'>"
+            f"<div style='font-size:0.78rem;font-weight:600;color:#475569;margin-bottom:2px;"
+            f"white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'>{label_txt}</div>"
+            f"<div style='font-size:1.28rem;font-weight:700;color:#0f172a;line-height:1.25;'>{val_txt}</div>"
+            f"<div style='font-size:0.95rem;font-weight:800;color:{sig_color};margin-top:2px;"
+            f"letter-spacing:1.2px;line-height:1.1;'>{sig_html}</div>"
+            f"</div>",
+            unsafe_allow_html=True,
+        )
+
+    def _render_corr_metrics(ds_key_label: str, corr_table: pd.DataFrame, px_col: str, py_col: str) -> None:
+        st.markdown(f"**📊 {ds_key_label}**")
+        if px_col == py_col:
+            st.info(t["same_param_info"])
+            return
+        row_stats = lookup_pair_stats(corr_table, px_col, py_col)
+        if row_stats is None:
+            st.warning(t["insufficient_data"])
+            return
+
+        m1, m2, m3, m4, m5 = st.columns(5)
+        r_val = row_stats["pearson_r"]
+        p_raw = row_stats["pearson_p"]
+        q_bh = row_stats["pearson_q_bh"]
+        rho_val = row_stats["spearman_rho"]
+        q_sp_bh = row_stats["spearman_q_bh"]
+        n_val = int(row_stats["n"])
+
+        pearson_sig = sig_stars(q_bh)
+        raw_p_sig = sig_stars(p_raw)
+        spearman_sig = sig_stars(q_sp_bh)
+
+        _render_stat_box(m1, t["metric_n"], f"{n_val:,}", None)
+        _render_stat_box(m2, t["metric_r"], f"{r_val:+.2f}", pearson_sig)
+        _render_stat_box(m3, t["metric_p"], f"{p_raw:.2f}", raw_p_sig)
+        _render_stat_box(m4, t["metric_q"], f"{q_bh:.2f}", pearson_sig)
+        _render_stat_box(m5, t["metric_rho"], f"{rho_val:+.2f}", spearman_sig)
+
     # Default first page: Funnel Estimator (tab_knn)
-    tab_knn, tab_corr, tab_data = st.tabs([t["tab_knn"], t["tab_corr"], t["tab_data"]])
+    tab_knn, tab_corr, tab_ctrl_corr, tab_data = st.tabs(
+        [t["tab_knn"], t["tab_corr"], t["tab_ctrl_corr"], t["tab_data"]]
+    )
 
     # =========================================================================
     # TAB 1 (Default): Nearest-Neighbor (k-NN) Attrition Funnel Estimator
@@ -1487,26 +1685,38 @@ def main() -> None:
         top_c1, top_c2, top_c3 = st.columns([2.2, 1.0, 1.4])
         with top_c1:
             knn_param_options = list(KNN_PARAM_SPECS.keys())
-            selected_knn_params = st.multiselect(
-                t["knn_match_params"],
-                options=knn_param_options,
-                default=["age", "amh"],
-                format_func=lambda k: p_labels.get(k, k),
-            )
+            with shaded_option_box(f"🎛️ {t['knn_match_params']}"):
+                selected_knn_params = st.multiselect(
+                    t["knn_match_params"],
+                    options=knn_param_options,
+                    default=["age", "amh"],
+                    format_func=lambda k: p_labels.get(k, k),
+                    label_visibility="collapsed",
+                )
         with top_c2:
-            k_neighbors = st.slider(t["input_k"], min_value=3, max_value=50, value=10, step=1)
+            with shaded_option_box(f"🔢 {t['input_k']}"):
+                k_neighbors = st.slider(
+                    t["input_k"],
+                    min_value=3,
+                    max_value=50,
+                    value=10,
+                    step=1,
+                    label_visibility="collapsed",
+                )
         with top_c3:
-            knn_pool_choice = st.radio(
-                t["knn_pool"],
-                options=[STUDY_KEY, COMMUNITY_KEY, "blend"],
-                format_func=lambda x: (
-                    t["pool_study"]
-                    if x == STUDY_KEY
-                    else (t["pool_comm"] if x == COMMUNITY_KEY else t["pool_blend"])
-                ),
-                index=2,
-                horizontal=True,
-            )
+            with shaded_option_box(f"🗂️ {t['knn_pool']}"):
+                knn_pool_choice = st.radio(
+                    t["knn_pool"],
+                    options=[STUDY_KEY, COMMUNITY_KEY, "blend"],
+                    format_func=lambda x: (
+                        t["pool_study"]
+                        if x == STUDY_KEY
+                        else (t["pool_comm"] if x == COMMUNITY_KEY else t["pool_blend"])
+                    ),
+                    index=2,
+                    horizontal=True,
+                    label_visibility="collapsed",
+                )
 
         user_params: Dict[str, float] = {}
         if selected_knn_params:
@@ -1517,17 +1727,19 @@ def main() -> None:
                 unit_str = str(spec.get("unit", ""))
                 inp_label = f"{p_labels.get(p_col, p_col)}{unit_str}"
                 with param_cols[idx % n_cols]:
-                    user_params[p_col] = float(
-                        st.number_input(
-                            inp_label,
-                            min_value=float(spec["min"]),
-                            max_value=float(spec["max"]),
-                            value=float(spec["default"]),
-                            step=float(spec["step"]),
-                            format=str(spec["fmt"]),
-                            key=f"knn_inp_{p_col}",
+                    with shaded_option_box(f"✏️ {inp_label}"):
+                        user_params[p_col] = float(
+                            st.number_input(
+                                inp_label,
+                                min_value=float(spec["min"]),
+                                max_value=float(spec["max"]),
+                                value=float(spec["default"]),
+                                step=float(spec["step"]),
+                                format=str(spec["fmt"]),
+                                label_visibility="collapsed",
+                                key=f"knn_inp_{p_col}",
+                            )
                         )
-                    )
 
         if knn_pool_choice == STUDY_KEY:
             candidate_pool = study_df.copy()
@@ -1716,22 +1928,26 @@ def main() -> None:
                         if len(selected_knn_params) > 2:
                             mc1, mc2 = st.columns(2)
                             with mc1:
-                                map_x = st.selectbox(
-                                    t["map_x_axis"],
-                                    options=selected_knn_params,
-                                    index=0,
-                                    format_func=lambda k: p_labels.get(k, k),
-                                    key="knn_map_x",
-                                )
+                                with shaded_option_box(f"📐 {t['map_x_axis']}"):
+                                    map_x = st.selectbox(
+                                        t["map_x_axis"],
+                                        options=selected_knn_params,
+                                        index=0,
+                                        format_func=lambda k: p_labels.get(k, k),
+                                        label_visibility="collapsed",
+                                        key="knn_map_x",
+                                    )
                             with mc2:
                                 default_my = 1 if selected_knn_params[1] != map_x else 0
-                                map_y = st.selectbox(
-                                    t["map_y_axis"],
-                                    options=selected_knn_params,
-                                    index=default_my,
-                                    format_func=lambda k: p_labels.get(k, k),
-                                    key="knn_map_y",
-                                )
+                                with shaded_option_box(f"📐 {t['map_y_axis']}"):
+                                    map_y = st.selectbox(
+                                        t["map_y_axis"],
+                                        options=selected_knn_params,
+                                        index=default_my,
+                                        format_func=lambda k: p_labels.get(k, k),
+                                        label_visibility="collapsed",
+                                        key="knn_map_y",
+                                    )
                         else:
                             map_x, map_y = selected_knn_params[0], selected_knn_params[1]
                     else:
@@ -1904,31 +2120,36 @@ def main() -> None:
         st.subheader(t["bubble_header"])
         st.markdown(t["bubble_desc"])
 
-        bh_c1, bh_c2, bh_c3, bh_c4 = st.columns([1.9, 1.0, 1.3, 0.8])
+        bh_c1, bh_c2, bh_c3, bh_c4 = st.columns([1.85, 1.05, 1.35, 0.85])
         with bh_c2:
-            bubble_ds_choice = st.radio(
-                t["bubble_ds"],
-                options=[STUDY_KEY, COMMUNITY_KEY],
-                format_func=lambda k: ds_names[k],
-                index=0,
-                horizontal=True,
-                key="bubble_ds_radio",
-            )
+            with shaded_option_box(f"🗂️ {t['bubble_ds']}"):
+                bubble_ds_choice = st.radio(
+                    t["bubble_ds"],
+                    options=[STUDY_KEY, COMMUNITY_KEY],
+                    format_func=lambda k: ds_names[k],
+                    index=0,
+                    horizontal=True,
+                    label_visibility="collapsed",
+                    key="bubble_ds_radio",
+                )
         with bh_c3:
-            click_target_mode = st.radio(
-                t["bubble_click_target"],
-                options=["both", 1, 2],
-                format_func=lambda s: (
-                    t["click_mode_both"]
-                    if s == "both"
-                    else (t["plot_1_label"] if s == 1 else t["plot_2_label"])
-                ),
-                index=0,
-                horizontal=True,
-                key="bubble_click_target_radio",
-            )
+            with shaded_option_box(f"🖱️ {t['bubble_click_target']}"):
+                click_target_mode = st.radio(
+                    t["bubble_click_target"],
+                    options=["both", 1, 2],
+                    format_func=lambda s: (
+                        t["click_mode_both"]
+                        if s == "both"
+                        else (t["plot_1_label"] if s == 1 else t["plot_2_label"])
+                    ),
+                    index=0,
+                    horizontal=True,
+                    label_visibility="collapsed",
+                    key="bubble_click_target_radio",
+                )
         with bh_c4:
-            show_r_on_bubble = st.checkbox(t["bubble_show_r"], value=False, key="bubble_show_r_chk")
+            with shaded_option_box(f"🔢 {t['bubble_display_opt']}"):
+                show_r_on_bubble = st.checkbox(t["bubble_show_r"], value=False, key="bubble_show_r_chk")
 
         bubble_target_df = study_df if bubble_ds_choice == STUDY_KEY else comm_df
         bubble_target_corr = study_corr_df if bubble_ds_choice == STUDY_KEY else comm_corr_df
@@ -1943,13 +2164,15 @@ def main() -> None:
             default_bubble_params = bubble_available_params[: min(7, len(bubble_available_params))]
 
         with bh_c1:
-            selected_bubble_params = st.multiselect(
-                t["bubble_params"],
-                options=bubble_available_params,
-                default=default_bubble_params,
-                format_func=lambda k: p_labels.get(k, k),
-                key=f"bubble_params_ms_{bubble_ds_choice}",
-            )
+            with shaded_option_box(f"🎛️ {t['bubble_params']}"):
+                selected_bubble_params = st.multiselect(
+                    t["bubble_params"],
+                    options=bubble_available_params,
+                    default=default_bubble_params,
+                    format_func=lambda k: p_labels.get(k, k),
+                    label_visibility="collapsed",
+                    key=f"bubble_params_ms_{bubble_ds_choice}",
+                )
 
         def _extract_pair_from_pt(pt: object, pair_keys_list: List[Tuple[str, str]]) -> Optional[Tuple[str, str]]:
             cdata = pt.get("customdata") if isinstance(pt, dict) else getattr(pt, "customdata", None)
@@ -2051,89 +2274,46 @@ def main() -> None:
 
         top_sc1, top_sc2 = st.columns([1.8, 1.2])
         with top_sc1:
-            stats_ds_choice = st.radio(
-                t["stats_ds"],
-                options=[STUDY_KEY, COMMUNITY_KEY, "both"],
-                format_func=lambda k: (
-                    ds_names[STUDY_KEY]
-                    if k == STUDY_KEY
-                    else (ds_names[COMMUNITY_KEY] if k == COMMUNITY_KEY else t["compare_both"])
-                ),
-                index=0,
-                horizontal=True,
-            )
+            with shaded_option_box(f"🗂️ {t['stats_ds']}"):
+                stats_ds_choice = st.radio(
+                    t["stats_ds"],
+                    options=[STUDY_KEY, COMMUNITY_KEY, "both"],
+                    format_func=lambda k: (
+                        ds_names[STUDY_KEY]
+                        if k == STUDY_KEY
+                        else (ds_names[COMMUNITY_KEY] if k == COMMUNITY_KEY else t["compare_both"])
+                    ),
+                    index=0,
+                    horizontal=True,
+                    label_visibility="collapsed",
+                )
         with top_sc2:
-            show_trendline = st.checkbox(t["show_trend"], value=True)
+            with shaded_option_box(f"📈 {t['trend_opt_label']}"):
+                show_trendline = st.checkbox(t["show_trend"], value=True)
 
         st.caption(t["sig_ref_title"])
-
-        def _render_stat_box(container, label_txt: str, val_txt: str, sig_str: Optional[str] = None) -> None:
-            """Render a shaded card box containing the stat description, value, and second-row significance stars."""
-            if sig_str is None:
-                sig_html = "&nbsp;"
-                sig_color = "transparent"
-            else:
-                sig_html = sig_str.replace("*", "&#42;") if sig_str else "—"
-                sig_color = "#dc2626" if sig_str.startswith("*") else "#64748b"
-
-            container.markdown(
-                f"<div style='background-color:#f1f5f9;border:1px solid #cbd5e1;border-radius:8px;"
-                f"padding:8px 6px;margin-bottom:8px;text-align:center;"
-                f"box-shadow:0 1px 2px rgba(15,23,42,0.05);'>"
-                f"<div style='font-size:0.78rem;font-weight:600;color:#475569;margin-bottom:2px;"
-                f"white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'>{label_txt}</div>"
-                f"<div style='font-size:1.28rem;font-weight:700;color:#0f172a;line-height:1.25;'>{val_txt}</div>"
-                f"<div style='font-size:0.95rem;font-weight:800;color:{sig_color};margin-top:2px;"
-                f"letter-spacing:1.2px;line-height:1.1;'>{sig_html}</div>"
-                f"</div>",
-                unsafe_allow_html=True,
-            )
-
-        def _render_corr_metrics(ds_key_label: str, corr_table: pd.DataFrame, px_col: str, py_col: str) -> None:
-            st.markdown(f"**📊 {ds_key_label}**")
-            if px_col == py_col:
-                st.info(t["same_param_info"])
-                return
-            row_stats = lookup_pair_stats(corr_table, px_col, py_col)
-            if row_stats is None:
-                st.warning(t["insufficient_data"])
-                return
-
-            m1, m2, m3, m4, m5 = st.columns(5)
-            r_val = row_stats["pearson_r"]
-            p_raw = row_stats["pearson_p"]
-            q_bh = row_stats["pearson_q_bh"]
-            rho_val = row_stats["spearman_rho"]
-            q_sp_bh = row_stats["spearman_q_bh"]
-            n_val = int(row_stats["n"])
-
-            pearson_sig = sig_stars(q_bh)
-            raw_p_sig = sig_stars(p_raw)
-            spearman_sig = sig_stars(q_sp_bh)
-
-            _render_stat_box(m1, t["metric_n"], f"{n_val:,}", None)
-            _render_stat_box(m2, t["metric_r"], f"{r_val:+.2f}", pearson_sig)
-            _render_stat_box(m3, t["metric_p"], f"{p_raw:.2f}", raw_p_sig)
-            _render_stat_box(m4, t["metric_q"], f"{q_bh:.2f}", pearson_sig)
-            _render_stat_box(m5, t["metric_rho"], f"{rho_val:+.2f}", spearman_sig)
 
         def _render_pairwise_panel(slot_idx: int, panel_title: str) -> None:
             st.markdown(f"#### {panel_title}")
             pc1, pc2 = st.columns(2)
             with pc1:
-                px_val = st.selectbox(
-                    f"{t['x_param']} ({slot_idx})",
-                    options=available_params,
-                    format_func=lambda k: p_labels.get(k, k),
-                    key=f"corr_px_{slot_idx}",
-                )
+                with shaded_option_box(f"📐 {t['x_param']} ({slot_idx})"):
+                    px_val = st.selectbox(
+                        f"{t['x_param']} ({slot_idx})",
+                        options=available_params,
+                        format_func=lambda k: p_labels.get(k, k),
+                        label_visibility="collapsed",
+                        key=f"corr_px_{slot_idx}",
+                    )
             with pc2:
-                py_val = st.selectbox(
-                    f"{t['y_param']} ({slot_idx})",
-                    options=available_params,
-                    format_func=lambda k: p_labels.get(k, k),
-                    key=f"corr_py_{slot_idx}",
-                )
+                with shaded_option_box(f"📐 {t['y_param']} ({slot_idx})"):
+                    py_val = st.selectbox(
+                        f"{t['y_param']} ({slot_idx})",
+                        options=available_params,
+                        format_func=lambda k: p_labels.get(k, k),
+                        label_visibility="collapsed",
+                        key=f"corr_py_{slot_idx}",
+                    )
 
             if stats_ds_choice == STUDY_KEY:
                 _render_corr_metrics(ds_names[STUDY_KEY], study_corr_df, px_val, py_val)
@@ -2255,11 +2435,26 @@ def main() -> None:
                 if p_labels[c] in set(view_corr["label_x"]).union(set(view_corr["label_y"]))
             ]
             with fc1:
-                filter_param1 = st.selectbox(t["filter_param"], options=all_p_opts, index=0, key="corr_tbl_p1")
+                with shaded_option_box(f"🔍 {t['filter_param']}"):
+                    filter_param1 = st.selectbox(
+                        t["filter_param"],
+                        options=all_p_opts,
+                        index=0,
+                        label_visibility="collapsed",
+                        key="corr_tbl_p1",
+                    )
             with fc2:
-                filter_param2 = st.selectbox(t["filter_param2"], options=all_p_opts, index=0, key="corr_tbl_p2")
+                with shaded_option_box(f"🔍 {t['filter_param2']}"):
+                    filter_param2 = st.selectbox(
+                        t["filter_param2"],
+                        options=all_p_opts,
+                        index=0,
+                        label_visibility="collapsed",
+                        key="corr_tbl_p2",
+                    )
             with fc3:
-                only_sig = st.checkbox(t["only_sig"], value=False)
+                with shaded_option_box(f"⭐ {t['sig_filter_label']}"):
+                    only_sig = st.checkbox(t["only_sig"], value=False)
 
             if filter_param1 != t["all_params"]:
                 view_corr = view_corr[
@@ -2360,7 +2555,440 @@ def main() -> None:
             st.table(sig_ref_df.set_index("符号" if lang_choice == "zh" else "Symbol"))
 
     # =========================================================================
-    # TAB 3: Summary Statistics by Dataset & Raw Harmonized Data
+    # TAB 3: Controlled Parameter Correlation Analysis
+    # =========================================================================
+    with tab_ctrl_corr:
+        all_ctrl_df = pd.concat([study_df, comm_df], ignore_index=True)
+
+        ctrl_available_params = [
+            p
+            for p in p_labels.keys()
+            if (not all_ctrl_df.empty and p in all_ctrl_df.columns and all_ctrl_df[p].notna().sum() >= 3)
+        ]
+        if len(ctrl_available_params) < 2:
+            ctrl_available_params = ["age", "amh", "afc", "eggs_retrieved", "eggs_mature", "blastocysts", "euploid"]
+
+        st.subheader(t["ctrl_header"])
+        st.markdown(t["ctrl_desc"])
+
+        # Step 1: Select Control Parameters & Define Filter Ranges
+        st.markdown(t["ctrl_step1_title"])
+
+        default_ctrl_filters = [p for p in ["amh", "age"] if p in ctrl_available_params]
+        with shaded_option_box(f"🎛️ {t['ctrl_select_params']}"):
+            selected_ctrl_params = st.multiselect(
+                t["ctrl_select_params"],
+                options=ctrl_available_params,
+                default=default_ctrl_filters,
+                format_func=lambda k: p_labels.get(k, k),
+                label_visibility="collapsed",
+                key="ctrl_filter_params_ms",
+            )
+
+        ctrl_ranges: Dict[str, Tuple[float, float]] = {}
+        if not selected_ctrl_params:
+            st.info(t["ctrl_no_filter_info"])
+        else:
+            n_ctrl_cols = min(len(selected_ctrl_params), 3)
+            ctrl_grid_cols = st.columns(n_ctrl_cols)
+            for idx, c_param in enumerate(selected_ctrl_params):
+                valid_s = (
+                    all_ctrl_df[c_param].dropna()
+                    if (not all_ctrl_df.empty and c_param in all_ctrl_df.columns)
+                    else pd.Series(dtype=float)
+                )
+                obs_min = float(valid_s.min()) if not valid_s.empty else 0.0
+                obs_max = float(valid_s.max()) if not valid_s.empty else 100.0
+                if obs_max < obs_min:
+                    obs_min, obs_max = obs_max, obs_min
+
+                # Default ranges: AMH [1.0, 3.0], Age [30.0, 35.0], others full observed range
+                if c_param == "amh":
+                    def_lo, def_hi = 1.0, 3.0
+                    step_val, fmt_str = 0.1, "%.2f"
+                    bound_lo, bound_hi = 0.0, max(50.0, obs_max)
+                elif c_param == "age":
+                    def_lo, def_hi = 30.0, 35.0
+                    step_val, fmt_str = 0.5, "%.1f"
+                    bound_lo, bound_hi = 18.0, max(55.0, obs_max)
+                elif c_param in KNN_PARAM_SPECS:
+                    spec = KNN_PARAM_SPECS[c_param]
+                    step_val = float(spec["step"])
+                    fmt_str = str(spec["fmt"])
+                    bound_lo = min(float(spec["min"]), obs_min)
+                    bound_hi = max(float(spec["max"]), obs_max)
+                    def_lo, def_hi = obs_min, obs_max
+                else:
+                    is_rate = "rate" in c_param
+                    step_val = 0.05 if is_rate else (0.1 if (obs_max - obs_min) <= 25.0 else 1.0)
+                    fmt_str = "%.2f" if step_val < 0.5 else ("%.1f" if step_val < 1.0 else "%.0f")
+                    bound_lo = min(0.0, obs_min)
+                    bound_hi = max(obs_max, bound_lo + 1.0)
+                    def_lo, def_hi = obs_min, obs_max
+
+                range_hint = t["ctrl_data_range"].format(lo=f"{obs_min:.3g}", hi=f"{obs_max:.3g}")
+                with ctrl_grid_cols[idx % n_ctrl_cols]:
+                    with shaded_option_box(
+                        f"🔹 {p_labels.get(c_param, c_param)} "
+                        f"<span style='font-weight:500;font-size:0.76rem;color:#475569;'>({range_hint})</span>"
+                    ):
+                        rc1, rc2 = st.columns(2)
+                        with rc1:
+                            val_lo = float(
+                                st.number_input(
+                                    t["ctrl_min_label"],
+                                    min_value=float(bound_lo),
+                                    max_value=float(bound_hi),
+                                    value=float(np.clip(def_lo, bound_lo, bound_hi)),
+                                    step=float(step_val),
+                                    format=fmt_str,
+                                    key=f"ctrl_min_{c_param}",
+                                )
+                            )
+                        with rc2:
+                            val_hi = float(
+                                st.number_input(
+                                    t["ctrl_max_label"],
+                                    min_value=float(bound_lo),
+                                    max_value=float(bound_hi),
+                                    value=float(np.clip(def_hi, bound_lo, bound_hi)),
+                                    step=float(step_val),
+                                    format=fmt_str,
+                                    key=f"ctrl_max_{c_param}",
+                                )
+                            )
+                        lo_clean, hi_clean = (val_lo, val_hi) if val_lo <= val_hi else (val_hi, val_lo)
+                        ctrl_ranges[c_param] = (lo_clean, hi_clean)
+
+        def _apply_ctrl_filters(df_in: pd.DataFrame) -> pd.DataFrame:
+            if df_in is None or df_in.empty or not ctrl_ranges:
+                return df_in.copy() if df_in is not None else pd.DataFrame()
+            mask = pd.Series(True, index=df_in.index)
+            for c_col, (lo_v, hi_v) in ctrl_ranges.items():
+                if c_col in df_in.columns:
+                    mask &= df_in[c_col].notna() & (df_in[c_col] >= lo_v) & (df_in[c_col] <= hi_v)
+                else:
+                    mask &= False
+            return df_in[mask].copy()
+
+        filt_study_df = _apply_ctrl_filters(study_df)
+        filt_comm_df = _apply_ctrl_filters(comm_df)
+
+        if ctrl_ranges:
+            cond_parts = [
+                f"`{p_labels.get(col, col)}: {lo_v:.3g} ~ {hi_v:.3g}`"
+                for col, (lo_v, hi_v) in ctrl_ranges.items()
+            ]
+            cond_str = " &nbsp;∧&nbsp; ".join(cond_parts)
+        else:
+            cond_str = t["all_params"]
+
+        st.markdown(
+            f"<div style='background-color:#eff6ff;border:1px solid #bfdbfe;border-left:4px solid #2563eb;"
+            f"border-radius:8px;padding:10px 14px;margin:8px 0 14px 0;font-size:0.9rem;color:#1e3a8a;'>"
+            + t["ctrl_filter_summary"].format(
+                cond_str=cond_str,
+                n_study=f"{len(filt_study_df):,}",
+                tot_study=f"{len(study_df):,}",
+                n_comm=f"{len(filt_comm_df):,}",
+                tot_comm=f"{len(comm_df):,}",
+            )
+            + "</div>",
+            unsafe_allow_html=True,
+        )
+
+        # Step 2: Select Target X & Y Parameters, Dataset, and Plot Display Options
+        st.markdown(t["ctrl_step2_title"])
+
+        default_ctrl_x = (
+            "eggs_retrieved"
+            if "eggs_retrieved" in ctrl_available_params
+            else ctrl_available_params[0]
+        )
+        default_ctrl_y = (
+            "blastocysts"
+            if "blastocysts" in ctrl_available_params
+            else ctrl_available_params[min(1, len(ctrl_available_params) - 1)]
+        )
+
+        ct_c1, ct_c2, ct_c3, ct_c4 = st.columns([1.05, 1.05, 1.35, 1.15])
+        with ct_c1:
+            with shaded_option_box(f"📐 {t['ctrl_x_param']}"):
+                ctrl_px = st.selectbox(
+                    t["ctrl_x_param"],
+                    options=ctrl_available_params,
+                    index=ctrl_available_params.index(default_ctrl_x),
+                    format_func=lambda k: p_labels.get(k, k),
+                    label_visibility="collapsed",
+                    key="ctrl_target_px",
+                )
+        with ct_c2:
+            with shaded_option_box(f"📐 {t['ctrl_y_param']}"):
+                ctrl_py = st.selectbox(
+                    t["ctrl_y_param"],
+                    options=ctrl_available_params,
+                    index=ctrl_available_params.index(default_ctrl_y),
+                    format_func=lambda k: p_labels.get(k, k),
+                    label_visibility="collapsed",
+                    key="ctrl_target_py",
+                )
+        with ct_c3:
+            with shaded_option_box(f"🗂️ {t['ctrl_ds_select']}"):
+                ctrl_ds_choice = st.radio(
+                    t["ctrl_ds_select"],
+                    options=[STUDY_KEY, COMMUNITY_KEY, "both"],
+                    format_func=lambda k: (
+                        ds_names[STUDY_KEY]
+                        if k == STUDY_KEY
+                        else (ds_names[COMMUNITY_KEY] if k == COMMUNITY_KEY else t["compare_both"])
+                    ),
+                    index=2,
+                    horizontal=True,
+                    label_visibility="collapsed",
+                    key="ctrl_ds_radio",
+                )
+        with ct_c4:
+            with shaded_option_box(f"📈 {t['ctrl_display_opt']}"):
+                ctrl_show_trend = st.checkbox(t["show_trend"], value=True, key="ctrl_show_trend_chk")
+                ctrl_show_bg = st.checkbox(t["ctrl_show_bg"], value=False, key="ctrl_show_bg_chk")
+
+        st.caption(t["sig_ref_title"])
+
+        # Compute BH-adjusted correlations within the filtered subsets (min_n=3 for subgroup flexibility)
+        filt_study_corr_df = compute_all_pairs_correlations(filt_study_df, min_n=3)
+        filt_comm_corr_df = compute_all_pairs_correlations(filt_comm_df, min_n=3)
+
+        if ctrl_ds_choice == STUDY_KEY:
+            _render_corr_metrics(ds_names[STUDY_KEY], filt_study_corr_df, ctrl_px, ctrl_py)
+        elif ctrl_ds_choice == COMMUNITY_KEY:
+            _render_corr_metrics(ds_names[COMMUNITY_KEY], filt_comm_corr_df, ctrl_px, ctrl_py)
+        else:
+            mc_left, mc_div, mc_right = st.columns([1.0, 0.04, 1.0])
+            with mc_left:
+                _render_corr_metrics(ds_names[STUDY_KEY], filt_study_corr_df, ctrl_px, ctrl_py)
+            with mc_div:
+                st.markdown(
+                    "<div style='border-left:2px solid #cbd5e1;height:100%;min-height:110px;margin:0 auto;width:2px;'></div>",
+                    unsafe_allow_html=True,
+                )
+            with mc_right:
+                _render_corr_metrics(ds_names[COMMUNITY_KEY], filt_comm_corr_df, ctrl_px, ctrl_py)
+
+        # Build Interactive Scatterplot for Filtered Samples
+        if ctrl_px == ctrl_py:
+            st.info(t["same_param_info"])
+        else:
+            ctrl_plot_ds_keys = (
+                [STUDY_KEY, COMMUNITY_KEY]
+                if ctrl_ds_choice == "both"
+                else [ctrl_ds_choice]
+            )
+            fig_ctrl_scatter = go.Figure()
+            has_any_filtered_pts = False
+
+            # Optional unfiltered background points
+            if ctrl_show_bg and not all_ctrl_df.empty:
+                bg_df = all_ctrl_df[all_ctrl_df["dataset_key"].isin(ctrl_plot_ds_keys)].dropna(
+                    subset=[ctrl_px, ctrl_py]
+                )
+                if not bg_df.empty:
+                    fig_ctrl_scatter.add_trace(
+                        go.Scatter(
+                            x=bg_df[ctrl_px],
+                            y=bg_df[ctrl_py],
+                            mode="markers",
+                            name=f"{t['ctrl_bg_legend']} (n={len(bg_df)})",
+                            marker=dict(color="rgba(148, 163, 184, 0.25)", size=5),
+                            hoverinfo="skip",
+                        )
+                    )
+
+            for ds_key in ctrl_plot_ds_keys:
+                source_sub = filt_study_df if ds_key == STUDY_KEY else filt_comm_df
+                if source_sub.empty or ctrl_px not in source_sub.columns or ctrl_py not in source_sub.columns:
+                    continue
+                sub_ds = source_sub.dropna(subset=[ctrl_px, ctrl_py]).copy()
+                if sub_ds.empty:
+                    continue
+
+                has_any_filtered_pts = True
+                color_hex = DATASET_COLORS[ds_key]
+                ds_label = ds_names[ds_key]
+                marker_sz = 7 if ds_key == STUDY_KEY else 9
+                marker_op = 0.55 if ds_key == STUDY_KEY else 0.90
+
+                fig_ctrl_scatter.add_trace(
+                    go.Scatter(
+                        x=sub_ds[ctrl_px],
+                        y=sub_ds[ctrl_py],
+                        mode="markers",
+                        name=f"{ds_label} (n={len(sub_ds)})",
+                        marker=dict(
+                            color=color_hex,
+                            size=marker_sz,
+                            opacity=marker_op,
+                            line=dict(width=0.6, color="#FFFFFF"),
+                        ),
+                        customdata=np.stack(
+                            [
+                                sub_ds["record_id"].fillna(""),
+                                sub_ds["age"].fillna(np.nan),
+                                sub_ds["amh"].fillna(np.nan),
+                                sub_ds["eggs_retrieved"].fillna(np.nan),
+                                sub_ds["blastocysts"].fillna(np.nan),
+                                sub_ds["euploid"].fillna(np.nan),
+                            ],
+                            axis=-1,
+                        ),
+                        hovertemplate=(
+                            "<b>%{customdata[0]}</b> (" + ds_label + ")<br>"
+                            + f"{p_labels.get(ctrl_px, ctrl_px)}: %{{x:.3g}}<br>"
+                            + f"{p_labels.get(ctrl_py, ctrl_py)}: %{{y:.3g}}<br>"
+                            + f"{p_labels['age']}: %{{customdata[1]:.1f}} | AMH: %{{customdata[2]:.2f}}<br>"
+                            + f"{p_labels['eggs_retrieved']}: %{{customdata[3]:.0f}} → "
+                            + f"{p_labels['blastocysts']}: %{{customdata[4]:.0f}} → "
+                            + f"{p_labels['euploid']}: %{{customdata[5]:.0f}}<extra></extra>"
+                        ),
+                    )
+                )
+
+                if ctrl_show_trend and len(sub_ds) >= 3 and sub_ds[ctrl_px].nunique() > 1:
+                    slope, intercept, r_lin, p_lin, _ = stats.linregress(
+                        sub_ds[ctrl_px].to_numpy(dtype=float),
+                        sub_ds[ctrl_py].to_numpy(dtype=float),
+                    )
+                    x_line = np.linspace(sub_ds[ctrl_px].min(), sub_ds[ctrl_px].max(), 100)
+                    y_line = slope * x_line + intercept
+                    fig_ctrl_scatter.add_trace(
+                        go.Scatter(
+                            x=x_line,
+                            y=y_line,
+                            mode="lines",
+                            name=f"{ds_label} Trend (r={r_lin:+.2f}, p={p_lin:.2g})",
+                            line=dict(color=color_hex, width=2.5, dash="dash"),
+                            hoverinfo="skip",
+                        )
+                    )
+
+            if has_any_filtered_pts:
+                fig_ctrl_scatter.update_layout(
+                    title=(
+                        f"{p_labels.get(ctrl_py, ctrl_py)} vs. {p_labels.get(ctrl_px, ctrl_px)}"
+                        + (f" — [{cond_str.replace('`', '').replace('&nbsp;∧&nbsp;', ', ')}]" if ctrl_ranges else "")
+                    ),
+                    xaxis_title=p_labels.get(ctrl_px, ctrl_px),
+                    yaxis_title=p_labels.get(ctrl_py, ctrl_py),
+                    template="plotly_white",
+                    height=480,
+                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+                )
+                st.plotly_chart(fig_ctrl_scatter, use_container_width=True, key="ctrl_corr_scatter_fig")
+            else:
+                st.warning(t["insufficient_data"])
+
+        # Expandable details: All-Pairs Correlations & Filtered Sample Records in this subset
+        with st.expander(t["ctrl_details_expander"]):
+            st.markdown(t["ctrl_filtered_pairs_title"])
+            sub_corr_tbl = (
+                filt_comm_corr_df
+                if ctrl_ds_choice == COMMUNITY_KEY
+                else filt_study_corr_df
+            )
+            if sub_corr_tbl is not None and not sub_corr_tbl.empty:
+                sub_view_corr = sub_corr_tbl.copy()
+                sub_view_corr["label_x"] = sub_view_corr["param_x"].map(lambda c: p_labels.get(c, c))
+                sub_view_corr["label_y"] = sub_view_corr["param_y"].map(lambda c: p_labels.get(c, c))
+                sub_view_corr["sig"] = sub_view_corr["pearson_q_bh"].map(sig_stars)
+                sub_disp_corr = sub_view_corr[
+                    [
+                        "label_x",
+                        "label_y",
+                        "n",
+                        "pearson_r",
+                        "pearson_p",
+                        "pearson_q_bh",
+                        "sig",
+                        "spearman_rho",
+                        "spearman_p",
+                        "spearman_q_bh",
+                    ]
+                ].rename(
+                    columns={
+                        "label_x": t["col_p1"],
+                        "label_y": t["col_p2"],
+                        "n": "N",
+                        "pearson_r": "Pearson r",
+                        "pearson_p": "Pearson p",
+                        "pearson_q_bh": "Pearson BH q",
+                        "sig": t["col_sig"],
+                        "spearman_rho": "Spearman ρ",
+                        "spearman_p": "Spearman p",
+                        "spearman_q_bh": "Spearman BH q",
+                    }
+                )
+                st.dataframe(
+                    sub_disp_corr.style.format(
+                        {
+                            "Pearson r": "{:+.2f}",
+                            "Pearson p": "{:.2f}",
+                            "Pearson BH q": "{:.2f}",
+                            "Spearman ρ": "{:+.2f}",
+                            "Spearman p": "{:.2f}",
+                            "Spearman BH q": "{:.2f}",
+                        }
+                    ),
+                    use_container_width=True,
+                    height=280,
+                    hide_index=True,
+                )
+            else:
+                st.info(t["insufficient_data"])
+
+            st.markdown(t["ctrl_filtered_records_title"])
+            filt_combined = pd.concat(
+                [
+                    df_part
+                    for ds_k, df_part in [(STUDY_KEY, filt_study_df), (COMMUNITY_KEY, filt_comm_df)]
+                    if (ctrl_ds_choice in ("both", ds_k) and not df_part.empty)
+                ],
+                ignore_index=True,
+            ) if (
+                (ctrl_ds_choice in ("both", STUDY_KEY) and not filt_study_df.empty)
+                or (ctrl_ds_choice in ("both", COMMUNITY_KEY) and not filt_comm_df.empty)
+            ) else pd.DataFrame()
+
+            if not filt_combined.empty:
+                disp_filt = filt_combined.copy()
+                disp_filt["dataset"] = disp_filt["dataset_key"].map(ds_names)
+                disp_filt["ivf_reason"] = disp_filt["ivf_reason"].map(
+                    lambda v: translate_ivf_reason(v, lang_choice)
+                )
+                disp_filt["protocol"] = disp_filt["protocol"].map(
+                    lambda v: translate_protocol(v, lang_choice)
+                )
+                disp_filt = disp_filt.drop(columns=["dataset_key"], errors="ignore")
+                filt_col_map = {
+                    **p_labels,
+                    "record_id": "ID",
+                    "dataset": "数据集" if lang_choice == "zh" else "Dataset",
+                    "ivf_reason": "原因" if lang_choice == "zh" else "Reason",
+                    "protocol": "方案" if lang_choice == "zh" else "Protocol",
+                    "trigger": "夜针" if lang_choice == "zh" else "Trigger",
+                    "note": "备注" if lang_choice == "zh" else "Note",
+                }
+                disp_filt = disp_filt.rename(columns=filt_col_map)
+                num_c_filt = disp_filt.select_dtypes(include=[np.number]).columns
+                st.dataframe(
+                    disp_filt.style.format({col: "{:.1f}" for col in num_c_filt}, na_rep="—"),
+                    use_container_width=True,
+                    height=300,
+                    hide_index=True,
+                )
+            else:
+                st.info(t["insufficient_data"])
+
+    # =========================================================================
+    # TAB 4: Summary Statistics by Dataset & Raw Harmonized Data
     # =========================================================================
     with tab_data:
         all_df = pd.concat([study_df, comm_df], ignore_index=True)
@@ -2371,30 +2999,34 @@ def main() -> None:
 
             sc1, sc2 = st.columns(2)
             with sc1:
-                sum_ds_choice = st.radio(
-                    t["summary_ds_select"],
-                    options=[STUDY_KEY, COMMUNITY_KEY, "both"],
-                    format_func=lambda k: (
-                        ds_names[STUDY_KEY]
-                        if k == STUDY_KEY
-                        else (ds_names[COMMUNITY_KEY] if k == COMMUNITY_KEY else t["both_name"])
-                    ),
-                    index=2,
-                    horizontal=True,
-                )
+                with shaded_option_box(f"🗂️ {t['summary_ds_select']}"):
+                    sum_ds_choice = st.radio(
+                        t["summary_ds_select"],
+                        options=[STUDY_KEY, COMMUNITY_KEY, "both"],
+                        format_func=lambda k: (
+                            ds_names[STUDY_KEY]
+                            if k == STUDY_KEY
+                            else (ds_names[COMMUNITY_KEY] if k == COMMUNITY_KEY else t["both_name"])
+                        ),
+                        index=2,
+                        horizontal=True,
+                        label_visibility="collapsed",
+                    )
             with sc2:
                 stat_label_map = (
                     {"mean": "均值 (Mean)", "median": "中位数 (Median)", "std": "标准差 (SD)", "all": "全部 (All)"}
                     if lang_choice == "zh"
                     else {"mean": "Mean", "median": "Median", "std": "SD", "all": "All"}
                 )
-                sum_stat_choice = st.radio(
-                    t["summary_stat_select"],
-                    options=["mean", "median", "std", "all"],
-                    format_func=lambda k: stat_label_map[k],
-                    index=0,
-                    horizontal=True,
-                )
+                with shaded_option_box(f"📊 {t['summary_stat_select']}"):
+                    sum_stat_choice = st.radio(
+                        t["summary_stat_select"],
+                        options=["mean", "median", "std", "all"],
+                        format_func=lambda k: stat_label_map[k],
+                        index=0,
+                        horizontal=True,
+                        label_visibility="collapsed",
+                    )
 
             selected_ds_keys = (
                 [STUDY_KEY, COMMUNITY_KEY]
