@@ -21,6 +21,24 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+# Hide Streamlit toolbar, deploy button, footer, and viewer/creator profile badges inside the app frame
+st.markdown(
+    """
+    <style>
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    .stAppDeployButton {display: none !important;}
+    [data-testid="stToolbar"] {visibility: hidden !important; height: 0 !important;}
+    [data-testid="stDecoration"] {display: none !important;}
+    [data-testid="stStatusWidget"] {visibility: hidden !important;}
+    [class^="viewerBadge"] {display: none !important;}
+    [class*="_profileContainer"] {display: none !important;}
+    [class*="_profilePreview"] {display: none !important;}
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 STUDY_KEY = "study"
 COMMUNITY_KEY = "community"
 
