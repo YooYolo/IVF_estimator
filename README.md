@@ -27,7 +27,8 @@ The **IVF Estimator** helps patients, researchers, and clinicians visualize real
 - **Selectable Reference Statistics:** Toggle which dataset is used to report headline correlation statistics (defaults to the **Study Dataset**). Includes a full searchable/sortable correlation matrix and pairwise summary table.
 
 ### 3. Nearest-Neighbor (k-NN) Attrition Funnel Estimator
-- **Personalized Funnel Prediction:** Matches on **Age** and **AMH** (with default $k = 10$, user-adjustable) to estimate expected counts and stage-to-stage conversion rates across the IVF attrition funnel:
+- **User-Defined Matching Parameters:** Defaults to matching on **Age** and **AMH** (with default $k = 10$, user-adjustable), and allows users to freely add or switch to any combination of baseline, stimulation, and intermediate funnel parameters — such as **Eggs Retrieved**, **Eggs Matured**, **Fertilized (2PN)**, **Blastocysts**, **Euploid**, **FSH+Menopur Dose**, **AFC**, **Baseline FSH**, **BMI**, or stage conversion rates.
+- **Personalized Funnel Prediction:** Computes standardized $z$-score Euclidean distance across all user-selected parameters to estimate expected counts and stage-to-stage conversion rates across the IVF attrition funnel:
   $$\text{Eggs Retrieved} \rightarrow \text{Mature (MII)} \rightarrow \text{Fertilized (2PN)} \rightarrow \text{Blastocysts} \rightarrow \text{Euploid Embryos}$$
 - **Configurable Reference Pool:** Choose to find nearest neighbors from:
   - **Study Dataset Only**
@@ -39,16 +40,24 @@ The **IVF Estimator** helps patients, researchers, and clinicians visualize real
 
 ## Data Sources
 
-### 1. Clinical Study Dataset (Local)
-- **File:** [`data/data Diminished ovarian reserve is associated to euploidy rate.xlsx`](data/data%20Diminished%20ovarian%20reserve%20is%20associated%20to%20euploidy%20rate.xlsx)
-- **Source Study:** Carnesi E, Castellano S, Albani E, Busnelli A, Smeraldi A, Bulbul O, Morenghi E, Immediata V, and Levi-Setti PE (2025). *Diminished ovarian reserve is associated to euploidy rate: a single center study.* **Frontiers in Endocrinology**, 15:1535776.
-- **Article Link:** [https://www.frontiersin.org/journals/endocrinology/articles/10.3389/fendo.2024.1535776/full](https://www.frontiersin.org/journals/endocrinology/articles/10.3389/fendo.2024.1535776/full)
-- **Description:** Single-center retrospective cohort dataset (777 cycles / 773 patients undergoing IVF with PGT-A). AMH is reported in **ng/mL**.
+### 1. Public Clinical Study Dataset (Local `.xlsx` / Zenodo Open Data)
+- **Local File:** [`data/data Diminished ovarian reserve is associated to euploidy rate.xlsx`](data/data%20Diminished%20ovarian%20reserve%20is%20associated%20to%20euploidy%20rate.xlsx)
+- **Public Data Repository (Zenodo):** [https://zenodo.org/records/13350396](https://zenodo.org/records/13350396) (DOI: [`10.5281/zenodo.13350395`](https://doi.org/10.5281/zenodo.13350395))
+- **Source Publication:** Carnesi E, Castellano S, Albani E, Busnelli A, Smeraldi A, Bulbul O, Morenghi E, Immediata V, and Levi-Setti PE (2025). *Diminished ovarian reserve is associated to euploidy rate: a single center study.* **Frontiers in Endocrinology**, 15:1535776.
+  - **Article Link:** [https://www.frontiersin.org/journals/endocrinology/articles/10.3389/fendo.2024.1535776/full](https://www.frontiersin.org/journals/endocrinology/articles/10.3389/fendo.2024.1535776/full)
+  - **PubMed / PMC:** PMID `39897960` | PMCID [`PMC11783844`](https://pmc.ncbi.nlm.nih.gov/articles/PMC11783844/) | DOI [`10.3389/fendo.2024.1535776`](https://doi.org/10.3389/fendo.2024.1535776)
+- **Where the Dataset Came From:**
+  - **Clinical Center:** Collected at the **Fertility Center, Division of Gynecology and Reproductive Medicine, IRCCS Humanitas Research Hospital** (Rozzano, Milan, Italy), affiliated with Humanitas University.
+  - **Study Cohort & Timeline:** A single-center retrospective cohort study of **777 IVF/ICSI cycles** (from **773 female patients**) with Preimplantation Genetic Testing for Aneuploidy (**PGT-A**) performed between **2015 and 2022**.
+  - **Open-Access Release:** The de-identified cycle-level clinical spreadsheet was publicly released by the authors on **Zenodo** as part of the journal's Open Science / Data Availability mandate to allow independent verification of how ovarian reserve markers (such as AMH and AFC) and female age relate to oocyte yield, blastocyst development, and embryo euploidy rates.
+  - **Schema & Units:** Because the dataset was exported directly from the hospital's clinical database in Milan (`ICH 1` to `ICH 777`, standing for *Istituto Clinico Humanitas*), the raw column headers are in **Italian** (e.g., `paz_eta_donna` for female age, `esa_last_amh` for AMH in **ng/mL**, `ovo_prelevati` for oocytes retrieved, `emb_biopsati` for biopsied blastocysts, and `emb_biopsia_pgs_euploide` for euploid blastocysts).
 
 ### 2. Community-Contributed Dataset (Live Google Sheet)
 - **Live Spreadsheet:** [Google Sheets Link (`gid=920796724`)](https://docs.google.com/spreadsheets/d/1sHdyPNEOtVj8Yi_vtrNq4T2b3LaqdqYU/edit?gid=920796724#gid=920796724)
 - **CSV Export Endpoint:** `https://docs.google.com/spreadsheets/d/1sHdyPNEOtVj8Yi_vtrNq4T2b3LaqdqYU/export?format=csv&gid=920796724`
-- **Description:** Anonymized (numeric IDs), crowd-sourced IVF cycle outcomes collected from an online support group. AMH is reported in **ng/mL** (US standard).
+- **Where the Dataset Came From:**
+  - Self-reported, anonymized (numeric IDs) IVF retrieval cycles shared voluntarily by members of an online fertility patient support community via a public Google Sheet.
+  - Includes multi-round tracking per patient (`Name`, `Egg retrieval round`), stimulation dosages (`FSH`, `Menopur`), and full attrition funnel outcomes (`Egg retreived` $\rightarrow$ `Egg matured` $\rightarrow$ `fertilized` $\rightarrow$ `Blastocyst` $\rightarrow$ `Euploid` / `Mosaic`). AMH is reported in **ng/mL** (US standard).
 - **Columns:**
   `Name`, `Egg retrieval round`, `age`, `AMH`, `FSH`, `Menopur`, `Egg retreived`, `Egg matured`, `fertilized`, `Blastocyst`, `Euploid`, `FSH+Menopur`, `Mature rate`, `Fertilize rate`, `Blastocyst rate`, `Eu rate`, `Mosaic`, `Male`, `Female`, `Blastocyst/egg`, `PGT-a`, `Fertilization`, `Trigger`, `IVF reason`, `Note`
 

@@ -150,7 +150,9 @@ UI_TEXT: Dict[str, Dict[str, str]] = {
         "col_p1": "参数 1",
         "col_p2": "参数 2",
         "knn_header": "🎯 最近邻 (k-NN) 促排漏斗预测",
-        "knn_desc": "基于 **年龄** 与 **AMH** 匹配最近邻周期（默认 $k=10$）。可在下方表格取消勾选 **`Include`** 剔除特定邻居并实时重算。",
+        "knn_desc": "可自由选择匹配参数（默认 **年龄** 与 **AMH**，也可加入 **取卵数、成熟卵数、受精数、囊胚数** 等，默认 $k=10$）。可在下方表格取消勾选 **`Include`** 剔除特定邻居并实时重算。",
+        "knn_match_params": "匹配参数 (可自由增删，如：受精数、囊胚数等)",
+        "select_at_least_one_param": "请至少选择 1 个匹配参数。",
         "input_age": "年龄",
         "input_amh": "AMH (ng/mL)",
         "input_k": "最近邻数量 (k)",
@@ -172,7 +174,9 @@ UI_TEXT: Dict[str, Dict[str, str]] = {
         "funnel_chart_title": "漏斗折线图 (均值、中位数及个体轨迹)",
         "mean_line": "均值 (Mean)",
         "median_line": "中位数 (Median)",
-        "map_chart_title": "最近邻分布图 (年龄 vs AMH)",
+        "map_chart_title": "最近邻分布图 ({x_label} vs {y_label})",
+        "map_x_axis": "分布图 X 轴",
+        "map_y_axis": "分布图 Y 轴",
         "your_input": "您的输入",
         "selected_nb": "入选最近邻",
         "funnel_table_title": "##### 📋 各阶段漏斗统计明细",
@@ -224,7 +228,9 @@ UI_TEXT: Dict[str, Dict[str, str]] = {
         "col_p1": "Param 1",
         "col_p2": "Param 2",
         "knn_header": "🎯 Nearest-Neighbor (k-NN) Attrition Funnel",
-        "knn_desc": "Matches **Age** and **AMH** (default $k=10$). Uncheck **`Include`** in the table to remove specific neighbors and recalculate.",
+        "knn_desc": "Customize matching parameters (defaults to **Age** and **AMH**; can add **Eggs Retrieved, Matured, Fertilized, Blastocysts**, etc., default $k=10$). Uncheck **`Include`** in the table to remove specific neighbors and recalculate.",
+        "knn_match_params": "Matching Parameters (add/remove e.g. Fertilized, Blastocysts, Eggs Retrieved)",
+        "select_at_least_one_param": "Please select at least 1 matching parameter.",
         "input_age": "Age",
         "input_amh": "AMH (ng/mL)",
         "input_k": "Neighbors (k)",
@@ -246,7 +252,9 @@ UI_TEXT: Dict[str, Dict[str, str]] = {
         "funnel_chart_title": "Attrition Funnel (Mean, Median & Neighbors)",
         "mean_line": "Mean",
         "median_line": "Median",
-        "map_chart_title": "Neighbors in (Age, AMH) Space",
+        "map_chart_title": "Neighbors in ({x_label} vs {y_label}) Space",
+        "map_x_axis": "Map X-Axis",
+        "map_y_axis": "Map Y-Axis",
         "your_input": "Your Input",
         "selected_nb": "Neighbors",
         "funnel_table_title": "##### 📋 Funnel Stage Summary",
@@ -264,6 +272,24 @@ FUNNEL_STAGE_COLS = [
     "blastocysts",
     "euploid",
 ]
+
+KNN_PARAM_SPECS: Dict[str, Dict[str, object]] = {
+    "age": {"min": 18.0, "max": 50.0, "default": 36.0, "step": 0.5, "fmt": "%.1f", "unit": ""},
+    "amh": {"min": 0.01, "max": 25.0, "default": 1.50, "step": 0.1, "fmt": "%.2f", "unit": " (ng/mL)"},
+    "eggs_retrieved": {"min": 0.0, "max": 60.0, "default": 10.0, "step": 1.0, "fmt": "%.0f", "unit": ""},
+    "eggs_mature": {"min": 0.0, "max": 60.0, "default": 8.0, "step": 1.0, "fmt": "%.0f", "unit": ""},
+    "fertilized": {"min": 0.0, "max": 50.0, "default": 6.0, "step": 1.0, "fmt": "%.0f", "unit": ""},
+    "blastocysts": {"min": 0.0, "max": 30.0, "default": 3.0, "step": 1.0, "fmt": "%.0f", "unit": ""},
+    "euploid": {"min": 0.0, "max": 20.0, "default": 1.0, "step": 1.0, "fmt": "%.0f", "unit": ""},
+    "gonadotropin_total_iu": {"min": 0.0, "max": 10000.0, "default": 2400.0, "step": 75.0, "fmt": "%.0f", "unit": ""},
+    "afc": {"min": 0.0, "max": 60.0, "default": 10.0, "step": 1.0, "fmt": "%.0f", "unit": ""},
+    "fsh_baseline": {"min": 0.1, "max": 50.0, "default": 7.5, "step": 0.5, "fmt": "%.1f", "unit": " (mIU/mL)"},
+    "bmi": {"min": 14.0, "max": 50.0, "default": 22.0, "step": 0.5, "fmt": "%.1f", "unit": ""},
+    "mature_rate": {"min": 0.0, "max": 1.0, "default": 0.80, "step": 0.05, "fmt": "%.2f", "unit": " (0–1)"},
+    "fertilization_rate": {"min": 0.0, "max": 1.0, "default": 0.75, "step": 0.05, "fmt": "%.2f", "unit": " (0–1)"},
+    "blastocyst_rate": {"min": 0.0, "max": 1.0, "default": 0.50, "step": 0.05, "fmt": "%.2f", "unit": " (0–1)"},
+    "euploid_rate": {"min": 0.0, "max": 1.0, "default": 0.45, "step": 0.05, "fmt": "%.2f", "unit": " (0–1)"},
+}
 
 
 # ---------------------------------------------------------------------------
@@ -629,34 +655,58 @@ def lookup_pair_stats(corr_df: pd.DataFrame, param_x: str, param_y: str) -> Opti
 # ---------------------------------------------------------------------------
 def find_nearest_neighbors(
     pool_df: pd.DataFrame,
-    user_age: float,
-    user_amh: float,
+    user_params: Optional[Dict[str, float]] = None,
     k: int = 10,
+    user_age: Optional[float] = None,
+    user_amh: Optional[float] = None,
 ) -> pd.DataFrame:
     if pool_df is None or pool_df.empty:
         return pd.DataFrame()
 
-    valid = pool_df.dropna(subset=["age", "amh"]).copy()
+    target_params: Dict[str, float] = {}
+    if user_params:
+        for col, val in user_params.items():
+            if col in pool_df.columns and val is not None and pd.notna(val):
+                target_params[col] = float(val)
+    else:
+        if user_age is not None and "age" in pool_df.columns:
+            target_params["age"] = float(user_age)
+        if user_amh is not None and "amh" in pool_df.columns:
+            target_params["amh"] = float(user_amh)
+
+    feature_cols = list(target_params.keys())
+    if not feature_cols:
+        return pd.DataFrame()
+
+    valid = pool_df.dropna(subset=feature_cols).copy()
     if valid.empty:
         return pd.DataFrame()
 
-    age_mean, age_std = valid["age"].mean(), valid["age"].std(ddof=0)
-    amh_mean, amh_std = valid["amh"].mean(), valid["amh"].std(ddof=0)
+    sq_dist = np.zeros(len(valid), dtype=float)
+    diff_cols: List[str] = []
 
-    age_std = age_std if (pd.notna(age_std) and age_std > 0) else 1.0
-    amh_std = amh_std if (pd.notna(amh_std) and amh_std > 0) else 1.0
+    for col in feature_cols:
+        u_val = target_params[col]
+        c_mean = valid[col].mean()
+        c_std = valid[col].std(ddof=0)
+        c_std = c_std if (pd.notna(c_std) and c_std > 0) else 1.0
 
-    z_age = (valid["age"] - age_mean) / age_std
-    z_amh = (valid["amh"] - amh_mean) / amh_std
+        z_col = (valid[col] - c_mean) / c_std
+        u_z = (u_val - c_mean) / c_std
+        sq_dist += (z_col - u_z) ** 2
 
-    u_z_age = (user_age - age_mean) / age_std
-    u_z_amh = (user_amh - amh_mean) / amh_std
+        diff_col = f"_diff_{col}"
+        valid[diff_col] = (valid[col] - u_val).abs()
+        diff_cols.append(diff_col)
 
-    valid["distance"] = np.sqrt((z_age - u_z_age) ** 2 + (z_amh - u_z_amh) ** 2)
-    valid["age_diff"] = (valid["age"] - user_age).abs()
-    valid["amh_diff"] = (valid["amh"] - user_amh).abs()
+    valid["distance"] = np.sqrt(sq_dist)
+    if "age" in target_params:
+        valid["age_diff"] = valid["_diff_age"]
+    if "amh" in target_params:
+        valid["amh_diff"] = valid["_diff_amh"]
 
-    valid = valid.sort_values(by=["distance", "age_diff", "amh_diff"], ascending=True).reset_index(drop=True)
+    valid = valid.sort_values(by=["distance"] + diff_cols, ascending=True).reset_index(drop=True)
+    valid = valid.drop(columns=diff_cols, errors="ignore")
     neighbors = valid.head(int(k)).copy()
     neighbors.insert(0, "rank", np.arange(1, len(neighbors) + 1))
     return neighbors
@@ -882,16 +932,18 @@ def main() -> None:
         st.subheader(t["knn_header"])
         st.markdown(t["knn_desc"])
 
-        kc1, kc2, kc3, kc4 = st.columns([1.0, 1.0, 1.2, 1.5])
-        with kc1:
-            user_age = st.number_input(t["input_age"], min_value=18.0, max_value=50.0, value=36.0, step=0.5)
-        with kc2:
-            user_amh = st.number_input(
-                t["input_amh"], min_value=0.01, max_value=25.0, value=1.50, step=0.1, format="%.2f"
+        top_c1, top_c2, top_c3 = st.columns([2.2, 1.0, 1.4])
+        with top_c1:
+            knn_param_options = list(KNN_PARAM_SPECS.keys())
+            selected_knn_params = st.multiselect(
+                t["knn_match_params"],
+                options=knn_param_options,
+                default=["age", "amh"],
+                format_func=lambda k: p_labels.get(k, k),
             )
-        with kc3:
+        with top_c2:
             k_neighbors = st.slider(t["input_k"], min_value=3, max_value=50, value=10, step=1)
-        with kc4:
+        with top_c3:
             knn_pool_choice = st.radio(
                 t["knn_pool"],
                 options=[STUDY_KEY, COMMUNITY_KEY, "blend"],
@@ -903,6 +955,27 @@ def main() -> None:
                 index=2,
                 horizontal=True,
             )
+
+        user_params: Dict[str, float] = {}
+        if selected_knn_params:
+            n_cols = min(len(selected_knn_params), 4)
+            param_cols = st.columns(n_cols)
+            for idx, p_col in enumerate(selected_knn_params):
+                spec = KNN_PARAM_SPECS[p_col]
+                unit_str = str(spec.get("unit", ""))
+                inp_label = f"{p_labels.get(p_col, p_col)}{unit_str}"
+                with param_cols[idx % n_cols]:
+                    user_params[p_col] = float(
+                        st.number_input(
+                            inp_label,
+                            min_value=float(spec["min"]),
+                            max_value=float(spec["max"]),
+                            value=float(spec["default"]),
+                            step=float(spec["step"]),
+                            format=str(spec["fmt"]),
+                            key=f"knn_inp_{p_col}",
+                        )
+                    )
 
         with st.expander(t["adv_filter_exp"], expanded=False):
             fc1, fc2, fc3 = st.columns(3)
@@ -931,22 +1004,46 @@ def main() -> None:
             if min_eggs_filter > 0:
                 candidate_pool = candidate_pool[candidate_pool["eggs_retrieved"] >= min_eggs_filter]
 
-        neighbors_df = find_nearest_neighbors(candidate_pool, user_age=user_age, user_amh=user_amh, k=k_neighbors)
-
-        if neighbors_df.empty:
-            st.warning(t["no_neighbors"])
+        if not selected_knn_params:
+            st.warning(t["select_at_least_one_param"])
+            neighbors_df = pd.DataFrame()
         else:
+            neighbors_df = find_nearest_neighbors(candidate_pool, user_params=user_params, k=k_neighbors)
+
+        if selected_knn_params and neighbors_df.empty:
+            st.warning(t["no_neighbors"])
+        elif not neighbors_df.empty:
             st.markdown(t["step1_neighbors"])
 
-            editor_df = pd.DataFrame(
+            base_table_cols = {
+                "Include": True,
+                ("排名" if lang_choice == "zh" else "Rank"): neighbors_df["rank"],
+                "ID": neighbors_df["record_id"],
+                ("数据集" if lang_choice == "zh" else "Dataset"): neighbors_df["dataset_key"].map(ds_names),
+                ("距离" if lang_choice == "zh" else "Dist"): neighbors_df["distance"].round(2),
+                p_labels["age"]: neighbors_df["age"].round(1),
+                p_labels["amh"]: neighbors_df["amh"].round(2),
+            }
+            default_shown_keys = {
+                "age",
+                "amh",
+                "eggs_retrieved",
+                "eggs_mature",
+                "fertilized",
+                "blastocysts",
+                "euploid",
+                "mature_rate",
+                "fertilization_rate",
+                "blastocyst_rate",
+                "euploid_rate",
+                "gonadotropin_total_iu",
+            }
+            for extra_p in selected_knn_params:
+                if extra_p not in default_shown_keys and extra_p in neighbors_df.columns:
+                    base_table_cols[p_labels.get(extra_p, extra_p)] = neighbors_df[extra_p].round(2)
+
+            base_table_cols.update(
                 {
-                    "Include": True,
-                    ("排名" if lang_choice == "zh" else "Rank"): neighbors_df["rank"],
-                    "ID": neighbors_df["record_id"],
-                    ("数据集" if lang_choice == "zh" else "Dataset"): neighbors_df["dataset_key"].map(ds_names),
-                    ("距离" if lang_choice == "zh" else "Dist"): neighbors_df["distance"].round(2),
-                    p_labels["age"]: neighbors_df["age"].round(1),
-                    p_labels["amh"]: neighbors_df["amh"].round(2),
                     p_labels["eggs_retrieved"]: neighbors_df["eggs_retrieved"],
                     p_labels["eggs_mature"]: neighbors_df["eggs_mature"],
                     p_labels["fertilized"]: neighbors_df["fertilized"],
@@ -961,6 +1058,7 @@ def main() -> None:
                     ("备注" if lang_choice == "zh" else "Note"): neighbors_df["note"],
                 }
             )
+            editor_df = pd.DataFrame(base_table_cols)
 
             edited_neighbors = st.data_editor(
                 editor_df,
@@ -1011,6 +1109,8 @@ def main() -> None:
                         d_key = nrow["dataset_key"]
                         c_hex = DATASET_COLORS.get(d_key, "#555555")
                         y_vals = [nrow[c] for c in FUNNEL_STAGE_COLS]
+                        age_txt = f"{nrow['age']:.1f}" if pd.notna(nrow["age"]) else "—"
+                        amh_txt = f"{nrow['amh']:.2f}" if pd.notna(nrow["amh"]) else "—"
                         fig_funnel.add_trace(
                             go.Scatter(
                                 x=stage_labels,
@@ -1023,7 +1123,7 @@ def main() -> None:
                                 showlegend=False,
                                 hovertemplate=(
                                     f"<b>{nrow['record_id']}</b> ({ds_names[d_key]})<br>"
-                                    f"{p_labels['age']}: {nrow['age']:.1f}, AMH: {nrow['amh']:.2f}<br>"
+                                    f"{p_labels['age']}: {age_txt}, AMH: {amh_txt}<br>"
                                     "%{x}: %{y}<extra></extra>"
                                 ),
                             )
@@ -1052,6 +1152,25 @@ def main() -> None:
                         )
                     )
 
+                    user_stage_x = [p_labels[sc] for sc in FUNNEL_STAGE_COLS if sc in user_params]
+                    user_stage_y = [user_params[sc] for sc in FUNNEL_STAGE_COLS if sc in user_params]
+                    if user_stage_x:
+                        fig_funnel.add_trace(
+                            go.Scatter(
+                                x=user_stage_x,
+                                y=user_stage_y,
+                                mode="markers",
+                                name=t["your_input"],
+                                marker=dict(
+                                    color="#E60026",
+                                    size=14,
+                                    symbol="star",
+                                    line=dict(width=1.2, color="#FFFFFF"),
+                                ),
+                                hovertemplate=f"<b>{t['your_input']}</b><br>%{{x}}: %{{y}}<extra></extra>",
+                            )
+                        )
+
                     fig_funnel.update_layout(
                         title=t["funnel_chart_title"],
                         template="plotly_white",
@@ -1061,16 +1180,45 @@ def main() -> None:
                     st.plotly_chart(fig_funnel, use_container_width=True)
 
                 with viz_c2:
+                    if len(selected_knn_params) >= 2:
+                        if len(selected_knn_params) > 2:
+                            mc1, mc2 = st.columns(2)
+                            with mc1:
+                                map_x = st.selectbox(
+                                    t["map_x_axis"],
+                                    options=selected_knn_params,
+                                    index=0,
+                                    format_func=lambda k: p_labels.get(k, k),
+                                    key="knn_map_x",
+                                )
+                            with mc2:
+                                default_my = 1 if selected_knn_params[1] != map_x else 0
+                                map_y = st.selectbox(
+                                    t["map_y_axis"],
+                                    options=selected_knn_params,
+                                    index=default_my,
+                                    format_func=lambda k: p_labels.get(k, k),
+                                    key="knn_map_y",
+                                )
+                        else:
+                            map_x, map_y = selected_knn_params[0], selected_knn_params[1]
+                    else:
+                        map_x = selected_knn_params[0]
+                        map_y = "euploid" if map_x != "euploid" else "blastocysts"
+
+                    x_label = p_labels.get(map_x, map_x)
+                    y_label = p_labels.get(map_y, map_y)
+
                     fig_map = go.Figure()
                     for d_key in [STUDY_KEY, COMMUNITY_KEY]:
-                        sub_pool = candidate_pool[candidate_pool["dataset_key"] == d_key].dropna(subset=["age", "amh"])
+                        sub_pool = candidate_pool[candidate_pool["dataset_key"] == d_key].dropna(subset=[map_x, map_y])
                         if sub_pool.empty:
                             continue
                         mstyle = DATASET_MARKER_STYLE[d_key]
                         fig_map.add_trace(
                             go.Scatter(
-                                x=sub_pool["age"],
-                                y=sub_pool["amh"],
+                                x=sub_pool[map_x],
+                                y=sub_pool[map_y],
                                 mode="markers",
                                 name=ds_names[d_key],
                                 marker=dict(
@@ -1083,13 +1231,13 @@ def main() -> None:
                         )
 
                     for d_key in [STUDY_KEY, COMMUNITY_KEY]:
-                        sub_nb = active_neighbors[active_neighbors["dataset_key"] == d_key]
+                        sub_nb = active_neighbors[active_neighbors["dataset_key"] == d_key].dropna(subset=[map_x, map_y])
                         if sub_nb.empty:
                             continue
                         fig_map.add_trace(
                             go.Scatter(
-                                x=sub_nb["age"],
-                                y=sub_nb["amh"],
+                                x=sub_nb[map_x],
+                                y=sub_nb[map_y],
                                 mode="markers",
                                 name=f"{t['selected_nb']}: {ds_names[d_key]}",
                                 marker=dict(
@@ -1101,31 +1249,46 @@ def main() -> None:
                                 text=sub_nb["record_id"],
                                 hovertemplate=(
                                     "<b>%{text}</b> (" + ds_names[d_key] + ")<br>"
-                                    f"{p_labels['age']}: %{{x:.1f}} | AMH: %{{y:.2f}}<extra></extra>"
+                                    f"{x_label}: %{{x:.3g}} | {y_label}: %{{y:.3g}}<extra></extra>"
                                 ),
                             )
                         )
 
-                    fig_map.add_trace(
-                        go.Scatter(
-                            x=[user_age],
-                            y=[user_amh],
-                            mode="markers",
-                            name=t["your_input"],
-                            marker=dict(
-                                color="#E60026",
-                                size=15,
-                                symbol="star",
-                                line=dict(width=1.2, color="#FFFFFF"),
-                            ),
-                            hovertemplate=f"<b>{t['your_input']}</b><br>{p_labels['age']}: {user_age:.1f}<br>AMH: {user_amh:.2f}<extra></extra>",
+                    if map_x in user_params and map_y in user_params:
+                        ux_val = user_params[map_x]
+                        uy_val = user_params[map_y]
+                        fig_map.add_trace(
+                            go.Scatter(
+                                x=[ux_val],
+                                y=[uy_val],
+                                mode="markers",
+                                name=t["your_input"],
+                                marker=dict(
+                                    color="#E60026",
+                                    size=15,
+                                    symbol="star",
+                                    line=dict(width=1.2, color="#FFFFFF"),
+                                ),
+                                hovertemplate=(
+                                    f"<b>{t['your_input']}</b><br>"
+                                    f"{x_label}: {ux_val:.3g}<br>{y_label}: {uy_val:.3g}<extra></extra>"
+                                ),
+                            )
                         )
-                    )
+                    elif map_x in user_params:
+                        fig_map.add_vline(
+                            x=user_params[map_x],
+                            line_dash="dash",
+                            line_color="#E60026",
+                            line_width=2,
+                            annotation_text=f"{t['your_input']}: {user_params[map_x]:.3g}",
+                            annotation_position="top right",
+                        )
 
                     fig_map.update_layout(
-                        title=t["map_chart_title"],
-                        xaxis_title=p_labels["age"],
-                        yaxis_title=p_labels["amh"],
+                        title=t["map_chart_title"].format(x_label=x_label, y_label=y_label),
+                        xaxis_title=x_label,
+                        yaxis_title=y_label,
                         template="plotly_white",
                         height=420,
                         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
