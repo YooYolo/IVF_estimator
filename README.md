@@ -20,11 +20,14 @@ The **IVF Estimator** helps patients, researchers, and clinicians visualize real
   - **Community Dataset (Live Google Sheet):** Prominent orange dots (`#FF8C00`, `size=8`, `alpha=0.85`)
 - **Wide-Format Summary Statistics:** Displays dataset summary metrics (`N`, `Mean`, `Median`, `SD`) in a compact wide table across all key parameters.
 
-### 2. All-Pairs Correlation Analysis & Interactive Scatterplot Explorer
-- **Comprehensive Pairwise Correlations:** Separately computes pairwise correlations (Pearson $r$ and Spearman $\rho$) across all numerical parameters within each dataset.
+### 2. Correlation Bubble Heatmap, All-Pairs Analysis & Interactive Scatterplot Explorer
+- **Correlation Bubble Heatmap:**
+  - **Axes:** Parameters on both $X$ and $Y$ axes (defaults to the public **Study Dataset** showing **AMH**, **AFC**, **Eggs Retrieved**, **Mature Eggs**, **Fertilized Eggs**, **Blastocysts**, and **Pass PGT**, with a multi-select control to freely add or remove any parameter).
+  - **Color (Heat):** Encodes correlation direction and magnitude (**Red** = positive correlation, **Blue** = negative correlation, **White** = zero/none).
+  - **Bubble Size & `*` Overlay:** Bubble diameter scales with Benjamini–Hochberg adjusted statistical significance ($q$-value), with significance stars (`*`, `**`, `***`, `****`) rendered directly on each dot.
+- **Comprehensive Pairwise Correlations:** Separately computes pairwise correlations (Pearson $r$ and Spearman $\rho$) across all available numerical parameters from the public study dataset (including female/male age and BMI, AMH, AFC, baseline FSH, estradiol, gonadotropin dose, follicles aspirated, retrieved/mature/immature/injected oocytes, fertilized, cleaved embryos, blastocysts, euploid/aneuploid/frozen embryos, semen parameters, and conversion rates) and the community dataset.
 - **Multiple-Testing Adjustment:** Automatically adjusts $p$-values across all tested parameter pairs using **Benjamini–Hochberg False Discovery Rate (FDR $q$-value)**.
-- **Interactive Scatterplot:** Choose any pair of $X$ and $Y$ parameters to inspect their bivariate distribution, trendline, and correlation metrics.
-- **Selectable Reference Statistics:** Toggle which dataset is used to report headline correlation statistics (defaults to the **Study Dataset**). Includes a full searchable/sortable correlation matrix and pairwise summary table.
+- **Interactive Scatterplot & Dual-Filter Table:** Choose any pair of $X$ and $Y$ parameters (e.g., **AFC vs. Mature Eggs**) to inspect their bivariate distribution, trendline, and correlation metrics, or filter the full pairwise summary table by both `Param 1` and `Param 2`.
 
 ### 3. Nearest-Neighbor (k-NN) Attrition Funnel Estimator
 - **User-Defined Matching Parameters:** Defaults to matching on **Age** and **AMH** (with default $k = 10$, user-adjustable), and allows users to freely add or switch to any combination of baseline, stimulation, and intermediate funnel parameters — such as **Eggs Retrieved**, **Eggs Matured**, **Fertilized (2PN)**, **Blastocysts**, **Euploid**, **FSH+Menopur Dose**, **AFC**, **Baseline FSH**, **BMI**, or stage conversion rates.

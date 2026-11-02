@@ -55,6 +55,7 @@ PARAM_LABELS_I18N: Dict[str, Dict[str, str]] = {
     "zh": {
         "age": "年龄",
         "amh": "AMH",
+        "afc": "基础卵泡(AFC)",
         "eggs_retrieved": "取卵数",
         "eggs_mature": "成熟卵数",
         "fertilized": "受精数",
@@ -68,11 +69,22 @@ PARAM_LABELS_I18N: Dict[str, Dict[str, str]] = {
         "euploid_per_egg_rate": "过检/取卵率",
         "gonadotropin_total_iu": "促排总剂量(IU)",
         "fsh_baseline": "基础FSH",
-        "afc": "基础卵泡(AFC)",
-        "bmi": "BMI",
-        "estradiol": "雌二醇",
+        "bmi": "女方BMI",
+        "estradiol": "雌二醇(E2)",
         "follicles_aspirated": "穿刺卵泡数",
+        "eggs_immature": "未成熟卵数",
+        "eggs_injected": "显微注射卵数",
+        "cleaved_embryos": "卵裂胚胎数",
         "aneuploid": "异常胚胎数",
+        "frozen_embryos": "冷冻胚胎数",
+        "male_age": "男方年龄",
+        "male_bmi": "男方BMI",
+        "infertility_months": "不孕月数",
+        "sperm_volume_ml": "精液量(mL)",
+        "sperm_conc_ml": "精子浓度(M/mL)",
+        "sperm_prog_motility": "前向运动精子(%)",
+        "sperm_normal_morph": "正常形态精子(%)",
+        "sperm_tpmc": "前向运动精子总数(TPMC)",
         "fsh_dose_iu": "FSH剂量",
         "menopur_dose_iu": "美诺孕剂量",
         "mosaic": "嵌合体数",
@@ -81,11 +93,12 @@ PARAM_LABELS_I18N: Dict[str, Dict[str, str]] = {
     "en": {
         "age": "Age",
         "amh": "AMH",
+        "afc": "AFC",
         "eggs_retrieved": "Eggs Retrieved",
-        "eggs_mature": "Eggs Matured",
-        "fertilized": "Fertilized",
+        "eggs_mature": "Mature Eggs",
+        "fertilized": "Fertilized Eggs",
         "blastocysts": "Blastocysts",
-        "euploid": "Euploid",
+        "euploid": "Pass PGT",
         "mature_rate": "Mature Rate",
         "fertilization_rate": "Fertilize Rate",
         "blastocyst_rate": "Blastocyst Rate",
@@ -94,17 +107,38 @@ PARAM_LABELS_I18N: Dict[str, Dict[str, str]] = {
         "euploid_per_egg_rate": "Euploid / Egg",
         "gonadotropin_total_iu": "FSH+Menopur (IU)",
         "fsh_baseline": "Baseline FSH",
-        "afc": "AFC",
-        "bmi": "BMI",
-        "estradiol": "Estradiol",
-        "follicles_aspirated": "Follicles",
+        "bmi": "Female BMI",
+        "estradiol": "Estradiol (E2)",
+        "follicles_aspirated": "Follicles Aspirated",
+        "eggs_immature": "Immature Eggs",
+        "eggs_injected": "Injected Eggs",
+        "cleaved_embryos": "Cleaved Embryos",
         "aneuploid": "Aneuploid",
+        "frozen_embryos": "Frozen Embryos",
+        "male_age": "Male Age",
+        "male_bmi": "Male BMI",
+        "infertility_months": "Infertility (Months)",
+        "sperm_volume_ml": "Semen Volume (mL)",
+        "sperm_conc_ml": "Sperm Conc. (M/mL)",
+        "sperm_prog_motility": "Prog. Motility (%)",
+        "sperm_normal_morph": "Normal Morph. (%)",
+        "sperm_tpmc": "Pre-wash TPMC",
         "fsh_dose_iu": "FSH Dose",
         "menopur_dose_iu": "Menopur Dose",
         "mosaic": "Mosaic",
         "retrieval_round": "Round",
     },
 }
+
+DEFAULT_BUBBLE_HEATMAP_PARAMS = [
+    "amh",
+    "afc",
+    "eggs_retrieved",
+    "eggs_mature",
+    "fertilized",
+    "blastocysts",
+    "euploid",
+]
 
 UI_TEXT: Dict[str, Dict[str, str]] = {
     "zh": {
@@ -128,7 +162,18 @@ UI_TEXT: Dict[str, Dict[str, str]] = {
         "tab_knn": "🎯 1. 漏斗预测 (k-NN)",
         "tab_corr": "📈 2. 相关性分析",
         "tab_data": "🗂️ 3. 汇总统计与原始数据",
-        "corr_header": "交互式散点图与相关性分析 (Benjamini–Hochberg 多重检验校正)",
+        "bubble_header": "🫧 相关性气泡热图 (Correlation Bubble Heatmap)",
+        "bubble_desc": "**颜色:** 正相关为红、负相关为蓝、无相关为白 &nbsp;|&nbsp; **气泡大小 & `*` 标记:** 代表统计显著性 (BH 校正 $q$ 值) &nbsp;|&nbsp; **💡 在热图中点击选择 2 个气泡**（依次点击两个气泡，或按住 Shift 连选两个气泡），即可在下方左右双图中同时展示两个气泡的相关性分析与散点图。",
+        "bubble_params": "气泡热图参数 (可自由添加或移除)",
+        "bubble_ds": "气泡热图数据集 (默认: 临床研究)",
+        "bubble_click_target": "点击气泡更新模式",
+        "click_mode_both": "双图依次更新 (选2个气泡)",
+        "plot_1_label": "左图 (图 1)",
+        "plot_2_label": "右图 (图 2)",
+        "active_bubbles_info": "🎯 **当前选中对比的两个气泡:** &nbsp; **左图 (图 1):** `{p1_x} vs. {p1_y}` &nbsp;|&nbsp; **右图 (图 2):** `{p2_x} vs. {p2_y}`",
+        "bubble_show_r": "在气泡上同时显示相关系数 r",
+        "bubble_need_2": "请至少选择 2 个参数以生成相关性气泡热图。",
+        "corr_header": "📉 双参数交互式散点图与相关性检验 (左右双图对比 · BH 多重检验校正)",
         "x_param": "X 轴参数",
         "y_param": "Y 轴参数",
         "stats_ds": "统计所用数据集 (默认: 临床研究)",
@@ -144,7 +189,8 @@ UI_TEXT: Dict[str, Dict[str, str]] = {
         "sig_ref_title": "**显著性标记说明 (`*` 基于 BH 校正 q 值):** &nbsp; `*` $q < 0.05$ &nbsp;|&nbsp; `**` $q < 0.01$ &nbsp;|&nbsp; `***` $q < 0.001$ &nbsp;|&nbsp; `****` $q < 0.0001$ &nbsp;|&nbsp; `ns` $q \\ge 0.05$ (不显著)",
         "show_trend": "显示线性趋势线",
         "all_pairs_header": "📋 所有参数对相关性汇总表 (BH 校正)",
-        "filter_param": "按参数筛选",
+        "filter_param": "按参数 1 筛选",
+        "filter_param2": "按参数 2 筛选",
         "all_params": "全部参数",
         "only_sig": "仅显示显著相关 (BH q < 0.05)",
         "col_p1": "参数 1",
@@ -160,11 +206,6 @@ UI_TEXT: Dict[str, Dict[str, str]] = {
         "pool_study": "仅临床研究",
         "pool_comm": "仅群友数据",
         "pool_blend": "混合样本库 (研究 + 群友)",
-        "adv_filter_exp": "🔍 可选筛选条件 & 已知取卵数折算",
-        "req_complete": "仅匹配五阶段数据完整的周期",
-        "min_eggs": "最低取卵数过滤",
-        "anchor_eggs": "按我已知的取卵数折算漏斗",
-        "my_eggs": "我的取卵数",
         "no_neighbors": "未找到匹配的最近邻样本。",
         "step1_neighbors": "#### 1. 匹配到的最近邻样本 (取消勾选 `Include` 可剔除)",
         "active_count": "当前使用 **{active} / {total}** 个最近邻（已剔除 {removed} 个）。",
@@ -206,7 +247,18 @@ UI_TEXT: Dict[str, Dict[str, str]] = {
         "tab_knn": "🎯 1. Funnel Estimator (k-NN)",
         "tab_corr": "📈 2. Correlations",
         "tab_data": "🗂️ 3. Summary & Data",
-        "corr_header": "Scatterplot & Correlation Analysis (Benjamini–Hochberg Adjusted)",
+        "bubble_header": "🫧 Correlation Bubble Heatmap",
+        "bubble_desc": "**Color (Heat):** Red = Positive, Blue = Negative, White = None &nbsp;|&nbsp; **Dot Size & `*`:** Statistical Significance (BH Adjusted $q$) &nbsp;|&nbsp; **💡 Select 2 bubbles** (click two bubbles sequentially, or Shift-click / box-select 2 bubbles) to display both correlation analyses side by side below.",
+        "bubble_params": "Bubble Heatmap Parameters (Add or Remove)",
+        "bubble_ds": "Heatmap Dataset (Default: Public Study)",
+        "bubble_click_target": "Bubble Selection Mode",
+        "click_mode_both": "Both Plots (Select 2 Bubbles)",
+        "plot_1_label": "Left Plot (Plot 1)",
+        "plot_2_label": "Right Plot (Plot 2)",
+        "active_bubbles_info": "🎯 **Currently Selected 2 Bubbles:** &nbsp; **Left Plot (Plot 1):** `{p1_x} vs. {p1_y}` &nbsp;|&nbsp; **Right Plot (Plot 2):** `{p2_x} vs. {p2_y}`",
+        "bubble_show_r": "Show r value on bubbles alongside *",
+        "bubble_need_2": "Please select at least 2 parameters for the bubble heatmap.",
+        "corr_header": "📉 Pairwise Scatterplot & Correlation Analysis (Side-by-Side · Benjamini–Hochberg Adjusted)",
         "x_param": "X Parameter",
         "y_param": "Y Parameter",
         "stats_ds": "Stats Dataset (Default: Study)",
@@ -222,7 +274,8 @@ UI_TEXT: Dict[str, Dict[str, str]] = {
         "sig_ref_title": "**Significance Reference (`*` based on BH Adj. q):** &nbsp; `*` $q < 0.05$ &nbsp;|&nbsp; `**` $q < 0.01$ &nbsp;|&nbsp; `***` $q < 0.001$ &nbsp;|&nbsp; `****` $q < 0.0001$ &nbsp;|&nbsp; `ns` $q \\ge 0.05$",
         "show_trend": "Show Trendline",
         "all_pairs_header": "📋 All-Pairs Correlation Table (BH Adjusted)",
-        "filter_param": "Filter by Parameter",
+        "filter_param": "Filter by Param 1",
+        "filter_param2": "Filter by Param 2",
         "all_params": "All",
         "only_sig": "Only Significant (BH q < 0.05)",
         "col_p1": "Param 1",
@@ -238,11 +291,6 @@ UI_TEXT: Dict[str, Dict[str, str]] = {
         "pool_study": "Study Only",
         "pool_comm": "Community Only",
         "pool_blend": "Blend (Both)",
-        "adv_filter_exp": "🔍 Optional Filters & Starting Eggs Override",
-        "req_complete": "Require complete 5-stage funnel data",
-        "min_eggs": "Min Eggs Retrieved",
-        "anchor_eggs": "Scale funnel to my known Eggs Retrieved",
-        "my_eggs": "My Eggs Retrieved",
         "no_neighbors": "No matching neighbors found.",
         "step1_neighbors": "#### 1. Nearest Neighbors (Uncheck `Include` to Remove)",
         "active_count": "Using **{active} / {total}** neighbors ({removed} removed).",
@@ -587,24 +635,38 @@ def load_study_dataset(xlsx_path: str = STUDY_XLSX_PATH) -> pd.DataFrame:
     df["dataset_key"] = STUDY_KEY
 
     df["age"] = _parse_numeric_series(raw.get("paz_eta_donna"))
+    df["male_age"] = _parse_numeric_series(raw.get("paz_eta_uomo"))
     df["amh"] = _parse_numeric_series(raw.get("esa_last_amh"))
     df["fsh_baseline"] = _parse_numeric_series(raw.get("esa_last_fsh"))
     df["afc"] = _parse_numeric_series(raw.get("ecg_afc"))
     df["bmi"] = _parse_numeric_series(raw.get("ana_bmi_donna"))
+    df["male_bmi"] = _parse_numeric_series(raw.get("ana_bmi_uomo"))
+    df["infertility_months"] = _parse_numeric_series(raw.get("ana_ricerca_mesi"))
     df["estradiol"] = _parse_numeric_series(raw.get("estradiolo"))
     df["gonadotropin_total_iu"] = _parse_numeric_series(raw.get("mon_gonad_dosaggio"))
 
     df["follicles_aspirated"] = _parse_numeric_series(raw.get("foll_aspirati"))
     df["eggs_retrieved"] = _parse_numeric_series(raw.get("ovo_prelevati"))
     df["eggs_mature"] = _parse_numeric_series(raw.get("ovo_post_m2"))
+    df["eggs_immature"] = _parse_numeric_series(raw.get("ovo_immaturi"))
+    df["eggs_injected"] = _parse_numeric_series(raw.get("ovo_iniettati"))
 
     fert_2pn = _parse_numeric_series(raw.get("ovo_2pn"))
     fert_tot = _parse_numeric_series(raw.get("ovo_fecondati"))
     df["fertilized"] = fert_2pn.fillna(fert_tot)
 
+    df["cleaved_embryos"] = _parse_numeric_series(raw.get("emb_divisi"))
     df["blastocysts"] = _parse_numeric_series(raw.get("emb_biopsati"))
     df["euploid"] = _parse_numeric_series(raw.get("emb_biopsia_pgs_euploide"))
     df["aneuploid"] = _parse_numeric_series(raw.get("emb_biopsia_pgs_aneuploide"))
+    df["frozen_embryos"] = _parse_numeric_series(raw.get("emb_congelati"))
+
+    df["sperm_volume_ml"] = _parse_numeric_series(raw.get("seme_pre_volume_totale_ml"))
+    sperm_conc_raw = _parse_numeric_series(raw.get("seme_pre_num_sperma_per_ml"))
+    df["sperm_conc_ml"] = np.where(sperm_conc_raw > 1e4, sperm_conc_raw / 1e6, sperm_conc_raw)
+    df["sperm_prog_motility"] = _parse_numeric_series(raw.get("seme_pre_mot_progressiva_perc"))
+    df["sperm_normal_morph"] = _parse_numeric_series(raw.get("seme_pre_forme_normali_perc"))
+    df["sperm_tpmc"] = _parse_numeric_series(raw.get("seme_pre_tpmc"))
 
     df["fsh_dose_iu"] = np.nan
     df["menopur_dose_iu"] = np.nan
@@ -698,9 +760,21 @@ def harmonize_community_df(raw: pd.DataFrame) -> pd.DataFrame:
     df["fsh_baseline"] = np.nan
     df["afc"] = np.nan
     df["bmi"] = np.nan
+    df["male_age"] = np.nan
+    df["male_bmi"] = np.nan
+    df["infertility_months"] = np.nan
     df["estradiol"] = np.nan
     df["follicles_aspirated"] = np.nan
+    df["eggs_immature"] = np.nan
+    df["eggs_injected"] = np.nan
+    df["cleaved_embryos"] = np.nan
     df["aneuploid"] = np.nan
+    df["frozen_embryos"] = np.nan
+    df["sperm_volume_ml"] = np.nan
+    df["sperm_conc_ml"] = np.nan
+    df["sperm_prog_motility"] = np.nan
+    df["sperm_normal_morph"] = np.nan
+    df["sperm_tpmc"] = np.nan
 
     calc_mat_rate = _safe_ratio(df["eggs_mature"], df["eggs_retrieved"])
     sheet_mat_rate = _parse_numeric_series(raw[c_mat_rate], is_rate=True) if c_mat_rate else pd.Series(np.nan, index=raw.index)
@@ -852,6 +926,195 @@ def lookup_pair_stats(corr_df: pd.DataFrame, param_x: str, param_y: str) -> Opti
         row["param_x"], row["param_y"] = param_x, param_y
         return row
     return None
+
+
+def _sig_bubble_size(q_val: float) -> float:
+    """Map BH-adjusted q-value to bubble marker diameter (larger = more significant)."""
+    if pd.isna(q_val):
+        return 10.0
+    if q_val < 0.0001:
+        return 44.0
+    if q_val < 0.001:
+        return 35.0
+    if q_val < 0.01:
+        return 28.0
+    if q_val < 0.05:
+        return 21.0
+    return 11.0
+
+
+def build_correlation_bubble_heatmap(
+    df: pd.DataFrame,
+    corr_df: pd.DataFrame,
+    param_cols: List[str],
+    lang: str,
+    ds_label: str,
+    show_r_text: bool = False,
+    active_pair_1: Optional[Tuple[str, str]] = None,
+    active_pair_2: Optional[Tuple[str, str]] = None,
+) -> Tuple[go.Figure, List[Tuple[str, str]]]:
+    p_labels = PARAM_LABELS_I18N[lang]
+    x_cats = [p_labels.get(c, c) for c in param_cols]
+    y_cats = list(reversed(x_cats))
+
+    xs: List[str] = []
+    ys: List[str] = []
+    r_vals: List[float] = []
+    sizes: List[float] = []
+    texts: List[str] = []
+    text_colors: List[str] = []
+    line_widths: List[float] = []
+    line_colors: List[str] = []
+    hover_texts: List[str] = []
+    pair_keys: List[Tuple[str, str]] = []
+    annotations: List[Dict[str, object]] = []
+
+    for py in reversed(param_cols):
+        ly = p_labels.get(py, py)
+        for px in param_cols:
+            if px == py:
+                continue
+            lx = p_labels.get(px, px)
+            row = lookup_pair_stats(corr_df, px, py)
+            if row is None or pd.isna(row.get("pearson_r")):
+                continue
+            r_v = float(row["pearson_r"])
+            p_v = float(row["pearson_p"])
+            q_v = float(row["pearson_q_bh"])
+            rho_v = float(row["spearman_rho"])
+            n_diag = int(row["n"])
+            raw_sig = sig_stars(q_v)
+            s_stars = "" if raw_sig == "ns" else raw_sig
+            b_size = _sig_bubble_size(q_v)
+            if show_r_text:
+                lbl = f"{r_v:+.2f}<br>{s_stars}" if s_stars else f"{r_v:+.2f}"
+            else:
+                lbl = s_stars
+
+            is_p1 = active_pair_1 is not None and (px, py) == active_pair_1
+            is_p2 = active_pair_2 is not None and (px, py) == active_pair_2
+
+            if is_p1 and is_p2:
+                lw = 4.5
+                lc = "#0f172a"
+                badge_txt = "①②"
+                badge_bg = "#0f172a"
+            elif is_p1:
+                lw = 4.5
+                lc = "#0f172a"
+                badge_txt = "①"
+                badge_bg = "#0f172a"
+            elif is_p2:
+                lw = 4.5
+                lc = "#0d9488"
+                badge_txt = "②"
+                badge_bg = "#0d9488"
+            else:
+                lw = 1.1
+                lc = "rgba(60, 60, 60, 0.40)"
+                badge_txt = ""
+                badge_bg = ""
+
+            xs.append(lx)
+            ys.append(ly)
+            r_vals.append(r_v)
+            sizes.append(b_size)
+            texts.append(lbl)
+            text_colors.append("#FFFFFF" if abs(r_v) >= 0.45 else "#111827")
+            line_widths.append(lw)
+            line_colors.append(lc)
+            pair_keys.append((px, py))
+
+            if badge_txt:
+                annotations.append(
+                    dict(
+                        x=lx,
+                        y=ly,
+                        text=f"<b>{badge_txt}</b>",
+                        showarrow=False,
+                        xshift=int(b_size * 0.45) + 8,
+                        yshift=int(b_size * 0.45) + 6,
+                        font=dict(size=11, color="#FFFFFF"),
+                        bgcolor=badge_bg,
+                        bordercolor="#FFFFFF",
+                        borderwidth=1,
+                        borderpad=2,
+                    )
+                )
+
+            sig_disp = sig_stars(q_v)
+            hover_texts.append(
+                f"<b>{ly} vs. {lx}</b> ({ds_label})<br>"
+                f"N = {n_diag:,}<br>"
+                f"Pearson r = {r_v:+.3f}<br>"
+                f"Raw p = {p_v:.2e}<br>"
+                f"BH Adj. q = {q_v:.2e} ({sig_disp})<br>"
+                f"Spearman ρ = {rho_v:+.3f}"
+            )
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=xs,
+            y=ys,
+            mode="markers+text",
+            text=texts,
+            textposition="middle center",
+            textfont=dict(size=12, color=text_colors, family="Arial Black, sans-serif"),
+            customdata=[[px, py] for px, py in pair_keys],
+            hovertext=hover_texts,
+            hoverinfo="text",
+            marker=dict(
+                size=sizes,
+                sizemode="diameter",
+                color=r_vals,
+                cmin=-1.0,
+                cmax=1.0,
+                colorscale=[
+                    [0.0, "#1d4ed8"],   # Negative correlation: Blue
+                    [0.5, "#ffffff"],   # Zero correlation: White
+                    [1.0, "#dc2626"],   # Positive correlation: Red
+                ],
+                colorbar=dict(
+                    title="Pearson r",
+                    tickvals=[-1.0, -0.5, 0.0, 0.5, 1.0],
+                ),
+                line=dict(width=line_widths, color=line_colors),
+                opacity=0.95,
+            ),
+            showlegend=False,
+        )
+    )
+
+    chart_h = max(460, 58 * len(param_cols) + 120)
+    fig.update_layout(
+        title=(
+            f"{'相关性气泡热图' if lang == 'zh' else 'Correlation Bubble Heatmap'} — {ds_label}"
+        ),
+        clickmode="event+select",
+        annotations=annotations,
+        xaxis=dict(
+            title="",
+            type="category",
+            categoryorder="array",
+            categoryarray=x_cats,
+            tickangle=-30,
+            showgrid=True,
+            gridcolor="rgba(200,200,200,0.35)",
+        ),
+        yaxis=dict(
+            title="",
+            type="category",
+            categoryorder="array",
+            categoryarray=y_cats,
+            showgrid=True,
+            gridcolor="rgba(200,200,200,0.35)",
+        ),
+        template="plotly_white",
+        height=chart_h,
+        margin=dict(l=40, r=40, t=60, b=60),
+    )
+    return fig, pair_keys
 
 
 # ---------------------------------------------------------------------------
@@ -1527,38 +1790,182 @@ def main() -> None:
     # TAB 2: Correlation Analysis & Interactive Scatterplot
     # =========================================================================
     with tab_corr:
-        st.subheader(t["corr_header"])
+        all_combined_df = pd.concat([study_df, comm_df], ignore_index=True)
 
         available_params = [
             p
             for p in p_labels.keys()
-            if (not active_df.empty and p in active_df.columns and active_df[p].notna().sum() >= 5)
+            if (not all_combined_df.empty and p in all_combined_df.columns and all_combined_df[p].notna().sum() >= 5)
         ]
         if len(available_params) < 2:
-            available_params = ["age", "amh", "eggs_retrieved", "blastocysts", "euploid", "euploid_rate"]
+            available_params = ["age", "amh", "afc", "eggs_retrieved", "eggs_mature", "blastocysts", "euploid"]
 
-        col_c1, col_c2, col_c3 = st.columns([1.1, 1.1, 1.5])
-        with col_c1:
-            default_x = available_params.index("amh") if "amh" in available_params else 0
-            param_x = st.selectbox(
-                t["x_param"],
-                options=available_params,
-                index=default_x,
+        # Initialize default session state for the 2 side-by-side plots:
+        # Plot 1: AMH vs Blastocysts; Plot 2: AMH vs Pass PGT (euploid)
+        if "corr_px_1" not in st.session_state or st.session_state["corr_px_1"] not in available_params:
+            st.session_state["corr_px_1"] = "amh" if "amh" in available_params else available_params[0]
+        if "corr_py_1" not in st.session_state or st.session_state["corr_py_1"] not in available_params:
+            st.session_state["corr_py_1"] = (
+                "blastocysts" if "blastocysts" in available_params else available_params[min(1, len(available_params) - 1)]
+            )
+        if "corr_px_2" not in st.session_state or st.session_state["corr_px_2"] not in available_params:
+            st.session_state["corr_px_2"] = "amh" if "amh" in available_params else available_params[0]
+        if "corr_py_2" not in st.session_state or st.session_state["corr_py_2"] not in available_params:
+            st.session_state["corr_py_2"] = (
+                "euploid" if "euploid" in available_params else available_params[min(1, len(available_params) - 1)]
+            )
+
+        # 1. Correlation Bubble Heatmap
+        st.subheader(t["bubble_header"])
+        st.markdown(t["bubble_desc"])
+
+        bh_c1, bh_c2, bh_c3, bh_c4 = st.columns([1.9, 1.0, 1.3, 0.8])
+        with bh_c2:
+            bubble_ds_choice = st.radio(
+                t["bubble_ds"],
+                options=[STUDY_KEY, COMMUNITY_KEY],
+                format_func=lambda k: ds_names[k],
+                index=0,
+                horizontal=True,
+                key="bubble_ds_radio",
+            )
+        with bh_c3:
+            click_target_mode = st.radio(
+                t["bubble_click_target"],
+                options=["both", 1, 2],
+                format_func=lambda s: (
+                    t["click_mode_both"]
+                    if s == "both"
+                    else (t["plot_1_label"] if s == 1 else t["plot_2_label"])
+                ),
+                index=0,
+                horizontal=True,
+                key="bubble_click_target_radio",
+            )
+        with bh_c4:
+            show_r_on_bubble = st.checkbox(t["bubble_show_r"], value=False, key="bubble_show_r_chk")
+
+        bubble_target_df = study_df if bubble_ds_choice == STUDY_KEY else comm_df
+        bubble_target_corr = study_corr_df if bubble_ds_choice == STUDY_KEY else comm_corr_df
+
+        bubble_available_params = [
+            p
+            for p in p_labels.keys()
+            if (not bubble_target_df.empty and p in bubble_target_df.columns and bubble_target_df[p].notna().sum() >= 5)
+        ]
+        default_bubble_params = [p for p in DEFAULT_BUBBLE_HEATMAP_PARAMS if p in bubble_available_params]
+        if len(default_bubble_params) < 2:
+            default_bubble_params = bubble_available_params[: min(7, len(bubble_available_params))]
+
+        with bh_c1:
+            selected_bubble_params = st.multiselect(
+                t["bubble_params"],
+                options=bubble_available_params,
+                default=default_bubble_params,
                 format_func=lambda k: p_labels.get(k, k),
+                key=f"bubble_params_ms_{bubble_ds_choice}",
             )
-        with col_c2:
-            default_y = (
-                available_params.index("euploid_rate")
-                if "euploid_rate" in available_params
-                else min(1, len(available_params) - 1)
+
+        def _extract_pair_from_pt(pt: object, pair_keys_list: List[Tuple[str, str]]) -> Optional[Tuple[str, str]]:
+            cdata = pt.get("customdata") if isinstance(pt, dict) else getattr(pt, "customdata", None)
+            p_idx = pt.get("point_index") if isinstance(pt, dict) else getattr(pt, "point_index", None)
+            if isinstance(cdata, (list, tuple)) and len(cdata) >= 2:
+                return (str(cdata[0]), str(cdata[1]))
+            if isinstance(p_idx, int) and 0 <= p_idx < len(pair_keys_list):
+                return pair_keys_list[p_idx]
+            return None
+
+        if len(selected_bubble_params) < 2:
+            st.warning(t["bubble_need_2"])
+        elif bubble_target_corr is not None and not bubble_target_corr.empty:
+            # Pre-build ordered pair list so we can process any pending chart selection before rendering
+            pre_pair_keys: List[Tuple[str, str]] = []
+            for py in reversed(selected_bubble_params):
+                for px in selected_bubble_params:
+                    if px == py:
+                        continue
+                    r_check = lookup_pair_stats(bubble_target_corr, px, py)
+                    if r_check is not None and pd.notna(r_check.get("pearson_r")):
+                        pre_pair_keys.append((px, py))
+
+            prior_chart_state = st.session_state.get("corr_bubble_heatmap_chart")
+            if prior_chart_state is not None:
+                sel_pts = []
+                if hasattr(prior_chart_state, "selection") and hasattr(prior_chart_state.selection, "points"):
+                    sel_pts = prior_chart_state.selection.points
+                elif isinstance(prior_chart_state, dict):
+                    sel_pts = prior_chart_state.get("selection", {}).get("points", [])
+
+                valid_clicked_pairs: List[Tuple[str, str]] = []
+                for pt in sel_pts:
+                    cp = _extract_pair_from_pt(pt, pre_pair_keys)
+                    if cp is not None and cp[0] in available_params and cp[1] in available_params:
+                        valid_clicked_pairs.append(cp)
+
+                if len(valid_clicked_pairs) >= 2:
+                    p_first, p_second = valid_clicked_pairs[-2], valid_clicked_pairs[-1]
+                    multi_token = ("multi", p_first, p_second)
+                    if st.session_state.get("last_bubble_click_token") != multi_token:
+                        st.session_state["last_bubble_click_token"] = multi_token
+                        st.session_state["corr_px_1"], st.session_state["corr_py_1"] = p_first
+                        st.session_state["corr_px_2"], st.session_state["corr_py_2"] = p_second
+                        st.session_state["next_bubble_slot"] = 1
+                elif len(valid_clicked_pairs) == 1:
+                    clicked_pair = valid_clicked_pairs[0]
+                    single_token = ("single", clicked_pair, click_target_mode)
+                    if st.session_state.get("last_bubble_click_token") != single_token:
+                        st.session_state["last_bubble_click_token"] = single_token
+                        if click_target_mode == "both":
+                            target_slot = st.session_state.get("next_bubble_slot", 1)
+                            st.session_state[f"corr_px_{target_slot}"] = clicked_pair[0]
+                            st.session_state[f"corr_py_{target_slot}"] = clicked_pair[1]
+                            st.session_state["next_bubble_slot"] = 2 if target_slot == 1 else 1
+                        else:
+                            target_slot = int(click_target_mode)
+                            st.session_state[f"corr_px_{target_slot}"] = clicked_pair[0]
+                            st.session_state[f"corr_py_{target_slot}"] = clicked_pair[1]
+
+            active_pair_1 = (st.session_state["corr_px_1"], st.session_state["corr_py_1"])
+            active_pair_2 = (st.session_state["corr_px_2"], st.session_state["corr_py_2"])
+
+            fig_bubble, _ = build_correlation_bubble_heatmap(
+                df=bubble_target_df,
+                corr_df=bubble_target_corr,
+                param_cols=selected_bubble_params,
+                lang=lang_choice,
+                ds_label=ds_names[bubble_ds_choice],
+                show_r_text=show_r_on_bubble,
+                active_pair_1=active_pair_1,
+                active_pair_2=active_pair_2,
             )
-            param_y = st.selectbox(
-                t["y_param"],
-                options=available_params,
-                index=default_y,
-                format_func=lambda k: p_labels.get(k, k),
+            try:
+                st.plotly_chart(
+                    fig_bubble,
+                    use_container_width=True,
+                    on_select="rerun",
+                    selection_mode=("points", "box", "lasso"),
+                    key="corr_bubble_heatmap_chart",
+                )
+            except TypeError:
+                st.plotly_chart(fig_bubble, use_container_width=True)
+
+            st.caption(
+                t["active_bubbles_info"].format(
+                    p1_x=p_labels.get(st.session_state["corr_px_1"], st.session_state["corr_px_1"]),
+                    p1_y=p_labels.get(st.session_state["corr_py_1"], st.session_state["corr_py_1"]),
+                    p2_x=p_labels.get(st.session_state["corr_px_2"], st.session_state["corr_px_2"]),
+                    p2_y=p_labels.get(st.session_state["corr_py_2"], st.session_state["corr_py_2"]),
+                )
             )
-        with col_c3:
+            st.caption(t["sig_ref_title"])
+
+        st.markdown("---")
+
+        # 2. Pairwise Interactive Scatterplot & Correlation Metrics (2 Plots Side-by-Side)
+        st.subheader(t["corr_header"])
+
+        top_sc1, top_sc2 = st.columns([1.8, 1.2])
+        with top_sc1:
             stats_ds_choice = st.radio(
                 t["stats_ds"],
                 options=[STUDY_KEY, COMMUNITY_KEY, "both"],
@@ -1569,6 +1976,32 @@ def main() -> None:
                 ),
                 index=0,
                 horizontal=True,
+            )
+        with top_sc2:
+            show_trendline = st.checkbox(t["show_trend"], value=True)
+
+        st.caption(t["sig_ref_title"])
+
+        def _render_stat_box(container, label_txt: str, val_txt: str, sig_str: Optional[str] = None) -> None:
+            """Render a shaded card box containing the stat description, value, and second-row significance stars."""
+            if sig_str is None:
+                sig_html = "&nbsp;"
+                sig_color = "transparent"
+            else:
+                sig_html = sig_str.replace("*", "&#42;") if sig_str else "—"
+                sig_color = "#dc2626" if sig_str.startswith("*") else "#64748b"
+
+            container.markdown(
+                f"<div style='background-color:#f1f5f9;border:1px solid #cbd5e1;border-radius:8px;"
+                f"padding:8px 6px;margin-bottom:8px;text-align:center;"
+                f"box-shadow:0 1px 2px rgba(15,23,42,0.05);'>"
+                f"<div style='font-size:0.78rem;font-weight:600;color:#475569;margin-bottom:2px;"
+                f"white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'>{label_txt}</div>"
+                f"<div style='font-size:1.28rem;font-weight:700;color:#0f172a;line-height:1.25;'>{val_txt}</div>"
+                f"<div style='font-size:0.95rem;font-weight:800;color:{sig_color};margin-top:2px;"
+                f"letter-spacing:1.2px;line-height:1.1;'>{sig_html}</div>"
+                f"</div>",
+                unsafe_allow_html=True,
             )
 
         def _render_corr_metrics(ds_key_label: str, corr_table: pd.DataFrame, px_col: str, py_col: str) -> None:
@@ -1590,106 +2023,136 @@ def main() -> None:
             n_val = int(row_stats["n"])
 
             pearson_sig = sig_stars(q_bh)
+            raw_p_sig = sig_stars(p_raw)
             spearman_sig = sig_stars(q_sp_bh)
 
-            m1.metric(t["metric_n"], f"{n_val:,}")
-            m2.metric(t["metric_r"], f"{r_val:+.2f} ({pearson_sig})")
-            m3.metric(t["metric_p"], f"{p_raw:.2f} ({sig_stars(p_raw)})")
-            m4.metric(t["metric_q"], f"{q_bh:.2f} ({pearson_sig})")
-            m5.metric(t["metric_rho"], f"{rho_val:+.2f} ({spearman_sig})")
+            _render_stat_box(m1, t["metric_n"], f"{n_val:,}", None)
+            _render_stat_box(m2, t["metric_r"], f"{r_val:+.2f}", pearson_sig)
+            _render_stat_box(m3, t["metric_p"], f"{p_raw:.2f}", raw_p_sig)
+            _render_stat_box(m4, t["metric_q"], f"{q_bh:.2f}", pearson_sig)
+            _render_stat_box(m5, t["metric_rho"], f"{rho_val:+.2f}", spearman_sig)
 
-        if stats_ds_choice == STUDY_KEY:
-            _render_corr_metrics(ds_names[STUDY_KEY], study_corr_df, param_x, param_y)
-        elif stats_ds_choice == COMMUNITY_KEY:
-            _render_corr_metrics(ds_names[COMMUNITY_KEY], comm_corr_df, param_x, param_y)
-        else:
-            c_left, c_right = st.columns(2)
-            with c_left:
-                _render_corr_metrics(ds_names[STUDY_KEY], study_corr_df, param_x, param_y)
-            with c_right:
-                _render_corr_metrics(ds_names[COMMUNITY_KEY], comm_corr_df, param_x, param_y)
+        def _render_pairwise_panel(slot_idx: int, panel_title: str) -> None:
+            st.markdown(f"#### {panel_title}")
+            pc1, pc2 = st.columns(2)
+            with pc1:
+                px_val = st.selectbox(
+                    f"{t['x_param']} ({slot_idx})",
+                    options=available_params,
+                    format_func=lambda k: p_labels.get(k, k),
+                    key=f"corr_px_{slot_idx}",
+                )
+            with pc2:
+                py_val = st.selectbox(
+                    f"{t['y_param']} ({slot_idx})",
+                    options=available_params,
+                    format_func=lambda k: p_labels.get(k, k),
+                    key=f"corr_py_{slot_idx}",
+                )
 
-        # Standard * Significance Reference Table
-        st.caption(t["sig_ref_title"])
+            if stats_ds_choice == STUDY_KEY:
+                _render_corr_metrics(ds_names[STUDY_KEY], study_corr_df, px_val, py_val)
+            elif stats_ds_choice == COMMUNITY_KEY:
+                _render_corr_metrics(ds_names[COMMUNITY_KEY], comm_corr_df, px_val, py_val)
+            else:
+                _render_corr_metrics(ds_names[STUDY_KEY], study_corr_df, px_val, py_val)
+                _render_corr_metrics(ds_names[COMMUNITY_KEY], comm_corr_df, px_val, py_val)
 
-        show_trendline = st.checkbox(t["show_trend"], value=True)
+            scatter_source_df = active_df
+            if scatter_source_df.empty or scatter_source_df[[px_val, py_val]].dropna().empty:
+                scatter_source_df = all_combined_df
 
-        if not active_df.empty and param_x in active_df.columns and param_y in active_df.columns:
-            plot_df = active_df.dropna(subset=[param_x, param_y]).copy()
-            if not plot_df.empty:
-                fig_scatter = go.Figure()
-                for ds_key in [STUDY_KEY, COMMUNITY_KEY]:
-                    sub_ds = plot_df[plot_df["dataset_key"] == ds_key]
-                    if sub_ds.empty:
-                        continue
-                    color_hex = DATASET_COLORS[ds_key]
-                    mstyle = DATASET_MARKER_STYLE[ds_key]
-                    ds_label = ds_names[ds_key]
+            if (
+                not scatter_source_df.empty
+                and px_val in scatter_source_df.columns
+                and py_val in scatter_source_df.columns
+            ):
+                plot_df = scatter_source_df.dropna(subset=[px_val, py_val]).copy()
+                if not plot_df.empty:
+                    fig_scatter = go.Figure()
+                    for ds_key in [STUDY_KEY, COMMUNITY_KEY]:
+                        sub_ds = plot_df[plot_df["dataset_key"] == ds_key]
+                        if sub_ds.empty:
+                            continue
+                        color_hex = DATASET_COLORS[ds_key]
+                        mstyle = DATASET_MARKER_STYLE[ds_key]
+                        ds_label = ds_names[ds_key]
 
-                    fig_scatter.add_trace(
-                        go.Scatter(
-                            x=sub_ds[param_x],
-                            y=sub_ds[param_y],
-                            mode="markers",
-                            name=f"{ds_label} (n={len(sub_ds)})",
-                            marker=dict(
-                                color=color_hex,
-                                size=mstyle["size"],
-                                opacity=mstyle["opacity"],
-                                line=dict(width=mstyle["line_width"], color="#FFFFFF"),
-                            ),
-                            customdata=np.stack(
-                                [
-                                    sub_ds["record_id"].fillna(""),
-                                    sub_ds["age"].fillna(np.nan),
-                                    sub_ds["amh"].fillna(np.nan),
-                                    sub_ds["eggs_retrieved"].fillna(np.nan),
-                                    sub_ds["blastocysts"].fillna(np.nan),
-                                    sub_ds["euploid"].fillna(np.nan),
-                                ],
-                                axis=-1,
-                            ),
-                            hovertemplate=(
-                                "<b>%{customdata[0]}</b> (" + ds_label + ")<br>"
-                                + f"{p_labels.get(param_x, param_x)}: %{{x:.3g}}<br>"
-                                + f"{p_labels.get(param_y, param_y)}: %{{y:.3g}}<br>"
-                                + f"{p_labels['age']}: %{{customdata[1]:.1f}} | AMH: %{{customdata[2]:.2f}}<br>"
-                                + f"{p_labels['eggs_retrieved']}: %{{customdata[3]:.0f}} → "
-                                + f"{p_labels['blastocysts']}: %{{customdata[4]:.0f}} → "
-                                + f"{p_labels['euploid']}: %{{customdata[5]:.0f}}<extra></extra>"
-                            ),
-                        )
-                    )
-
-                    if show_trendline and len(sub_ds) >= 3 and sub_ds[param_x].nunique() > 1:
-                        slope, intercept, _, _, _ = stats.linregress(
-                            sub_ds[param_x].to_numpy(dtype=float),
-                            sub_ds[param_y].to_numpy(dtype=float),
-                        )
-                        x_line = np.linspace(sub_ds[param_x].min(), sub_ds[param_x].max(), 100)
-                        y_line = slope * x_line + intercept
                         fig_scatter.add_trace(
                             go.Scatter(
-                                x=x_line,
-                                y=y_line,
-                                mode="lines",
-                                name=f"{ds_label} Trend",
-                                line=dict(color=color_hex, width=2, dash="dash"),
-                                hoverinfo="skip",
+                                x=sub_ds[px_val],
+                                y=sub_ds[py_val],
+                                mode="markers",
+                                name=f"{ds_label} (n={len(sub_ds)})",
+                                marker=dict(
+                                    color=color_hex,
+                                    size=mstyle["size"],
+                                    opacity=mstyle["opacity"],
+                                    line=dict(width=mstyle["line_width"], color="#FFFFFF"),
+                                ),
+                                customdata=np.stack(
+                                    [
+                                        sub_ds["record_id"].fillna(""),
+                                        sub_ds["age"].fillna(np.nan),
+                                        sub_ds["amh"].fillna(np.nan),
+                                        sub_ds["eggs_retrieved"].fillna(np.nan),
+                                        sub_ds["blastocysts"].fillna(np.nan),
+                                        sub_ds["euploid"].fillna(np.nan),
+                                    ],
+                                    axis=-1,
+                                ),
+                                hovertemplate=(
+                                    "<b>%{customdata[0]}</b> (" + ds_label + ")<br>"
+                                    + f"{p_labels.get(px_val, px_val)}: %{{x:.3g}}<br>"
+                                    + f"{p_labels.get(py_val, py_val)}: %{{y:.3g}}<br>"
+                                    + f"{p_labels['age']}: %{{customdata[1]:.1f}} | AMH: %{{customdata[2]:.2f}}<br>"
+                                    + f"{p_labels['eggs_retrieved']}: %{{customdata[3]:.0f}} → "
+                                    + f"{p_labels['blastocysts']}: %{{customdata[4]:.0f}} → "
+                                    + f"{p_labels['euploid']}: %{{customdata[5]:.0f}}<extra></extra>"
+                                ),
                             )
                         )
 
-                fig_scatter.update_layout(
-                    title=f"{p_labels.get(param_y, param_y)} vs. {p_labels.get(param_x, param_x)}",
-                    xaxis_title=p_labels.get(param_x, param_x),
-                    yaxis_title=p_labels.get(param_y, param_y),
-                    template="plotly_white",
-                    height=500,
-                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-                )
-                st.plotly_chart(fig_scatter, use_container_width=True)
+                        if show_trendline and len(sub_ds) >= 3 and sub_ds[px_val].nunique() > 1:
+                            slope, intercept, _, _, _ = stats.linregress(
+                                sub_ds[px_val].to_numpy(dtype=float),
+                                sub_ds[py_val].to_numpy(dtype=float),
+                            )
+                            x_line = np.linspace(sub_ds[px_val].min(), sub_ds[px_val].max(), 100)
+                            y_line = slope * x_line + intercept
+                            fig_scatter.add_trace(
+                                go.Scatter(
+                                    x=x_line,
+                                    y=y_line,
+                                    mode="lines",
+                                    name=f"{ds_label} Trend",
+                                    line=dict(color=color_hex, width=2, dash="dash"),
+                                    hoverinfo="skip",
+                                )
+                            )
 
-        # Full All-Pairs Correlation Table
+                    fig_scatter.update_layout(
+                        title=f"{p_labels.get(py_val, py_val)} vs. {p_labels.get(px_val, px_val)}",
+                        xaxis_title=p_labels.get(px_val, px_val),
+                        yaxis_title=p_labels.get(py_val, py_val),
+                        template="plotly_white",
+                        height=440,
+                        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+                    )
+                    st.plotly_chart(fig_scatter, use_container_width=True, key=f"corr_scatter_fig_{slot_idx}")
+
+        panel_col_left, panel_col_div, panel_col_right = st.columns([1.0, 0.04, 1.0])
+        with panel_col_left:
+            _render_pairwise_panel(1, f"① {t['plot_1_label']}")
+        with panel_col_div:
+            st.markdown(
+                "<div style='border-left:2px solid #cbd5e1;height:100%;min-height:640px;margin:0 auto;width:2px;'></div>",
+                unsafe_allow_html=True,
+            )
+        with panel_col_right:
+            _render_pairwise_panel(2, f"② {t['plot_2_label']}")
+
+        # 3. Full All-Pairs Correlation Table
         st.markdown("---")
         st.subheader(t["all_pairs_header"])
         target_corr_key = COMMUNITY_KEY if stats_ds_choice == COMMUNITY_KEY else STUDY_KEY
@@ -1700,22 +2163,46 @@ def main() -> None:
             view_corr["label_x"] = view_corr["param_x"].map(lambda c: p_labels.get(c, c))
             view_corr["label_y"] = view_corr["param_y"].map(lambda c: p_labels.get(c, c))
 
-            fc1, fc2 = st.columns([1.5, 1.5])
+            fc1, fc2, fc3 = st.columns([1.3, 1.3, 1.2])
+            all_p_opts = [t["all_params"]] + [
+                p_labels[c]
+                for c in p_labels.keys()
+                if p_labels[c] in set(view_corr["label_x"]).union(set(view_corr["label_y"]))
+            ]
             with fc1:
-                all_p_opts = [t["all_params"]] + sorted(
-                    list(set(view_corr["label_x"]).union(set(view_corr["label_y"])))
-                )
-                filter_param = st.selectbox(t["filter_param"], options=all_p_opts, index=0)
+                filter_param1 = st.selectbox(t["filter_param"], options=all_p_opts, index=0, key="corr_tbl_p1")
             with fc2:
+                filter_param2 = st.selectbox(t["filter_param2"], options=all_p_opts, index=0, key="corr_tbl_p2")
+            with fc3:
                 only_sig = st.checkbox(t["only_sig"], value=False)
 
-            if filter_param != t["all_params"]:
+            if filter_param1 != t["all_params"]:
                 view_corr = view_corr[
-                    (view_corr["label_x"] == filter_param) | (view_corr["label_y"] == filter_param)
-                ]
+                    (view_corr["label_x"] == filter_param1) | (view_corr["label_y"] == filter_param1)
+                ].copy()
+                swap_mask = view_corr["label_y"] == filter_param1
+                view_corr.loc[swap_mask, ["label_x", "label_y"]] = view_corr.loc[
+                    swap_mask, ["label_y", "label_x"]
+                ].to_numpy()
+
+            if filter_param2 != t["all_params"]:
+                if filter_param1 != t["all_params"]:
+                    view_corr = view_corr[view_corr["label_y"] == filter_param2].copy()
+                else:
+                    view_corr = view_corr[
+                        (view_corr["label_x"] == filter_param2) | (view_corr["label_y"] == filter_param2)
+                    ].copy()
+                    swap_mask2 = view_corr["label_x"] == filter_param2
+                    view_corr.loc[swap_mask2, ["label_x", "label_y"]] = view_corr.loc[
+                        swap_mask2, ["label_y", "label_x"]
+                    ].to_numpy()
+
             if only_sig:
                 view_corr = view_corr[view_corr["pearson_q_bh"] < 0.05]
 
+            view_corr = view_corr.sort_values(
+                by=["pearson_q_bh", "abs_pearson_r"], ascending=[True, False]
+            ).reset_index(drop=True)
             view_corr["sig"] = view_corr["pearson_q_bh"].map(sig_stars)
 
             display_corr = view_corr[
